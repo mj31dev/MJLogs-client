@@ -1,0 +1,27 @@
+# Gradle
+.gradle/
+build/
+out/
+
+# IDE - IntelliJ / Android Studio
+.idea/*
+!.idea/runConfigurations/
+*.iml
+
+# IDE - VS Code
+.vscode/
+
+# Kotlin
+.kotlin/
+
+# Android
+local.properties
+*.hprof
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+.history/
+detekt-reports/

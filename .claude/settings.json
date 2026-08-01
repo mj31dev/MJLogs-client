@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "project": {
+    "name": "logger-client",
+    "language": "kotlin",
+    "package": "dev.mj31.logger.client"
+  },
+  "autoFormat": {
+    "enabled": true,
+    "onSave": true,
+    "onEdit": true,
+    "rules": [
+      {
+        "pattern": "**/*.{kt,kts}",
+        "command": "./gradlew detektFormat"
+      }
+    ]
+  },
+  "hooks": {
+    "preCommit": "./.githooks/pre-commit",
+    "postEdit": "./gradlew detektFormat"
+  },
+  "qualityGates": {
+    "staticAnalysis": "./gradlew detekt",
+    "testSuite": "./gradlew test"
+  },
+  "permissions": {
+    "defaultMode": "ask",
+    "allow": [
+      "Bash(./gradlew build*)",
+      "Bash(./gradlew test*)",
+      "Bash(./gradlew detekt*)",
+      "Bash(./gradlew tasks*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git branch*)",
+      "Bash(git show*)",
+      "Bash(ls*)",
+      "Bash(cat*)",
+      "Bash(grep*)",
+      "Bash(find*)",
+      "Bash(pwd)",
+      "Bash(rm *)",
+      "Bash(rm -f *)",
+      "ViewFile",
+      "Grep",
+      "ListDir",
+      "ReplaceFileContent",
+      "MultiReplaceFileContent",
+      "WriteToFile"
+    ],
+    "ask": [
+      "Bash(git add*)",
+      "Bash(git checkout*)",
+      "Bash(git switch*)",
+      "Bash(git merge*)",
+      "Bash(chmod*)"
+    ],
+    "deny": [
+      "Bash(git commit*)",
+      "Bash(git push*)",
+      "Bash(git stash*)",
+      "Bash(git reset --hard*)",
+      "Bash(git rebase*)",
+      "Bash(git clean -f*)",
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf ~/*)",
+      "Bash(sudo*)"
+    ]
+  }
+}
