@@ -1,6 +1,6 @@
 # Claude Code Workspace Configuration & Master Prompt
 
-Welcome to the `logger-client` Kotlin Multiplatform (KMP) Desktop codebase.
+Welcome to the `MJLogs` Kotlin Multiplatform (KMP) Desktop codebase (repository `MJLogs-client`).
 
 ## Language & Communication Policy
 - **Chat Responses**: Always respond to the user in the chat in the language they used to communicate (e.g. Russian if the user speaks Russian, English if they speak English).
@@ -25,9 +25,9 @@ To execute Claude Code CLI in an isolated native macOS sandbox with **100% full 
 ## Multi-Module Architecture & Tech Stack
 - **Target Platform**: Desktop (JVM / Compose Multiplatform Desktop for macOS, Windows, Linux).
 - **Gradle Submodules**:
-  - `:domain` (`dev.mj31.logger.client.domain`): Pure Kotlin business logic & repository interfaces.
+  - `:domain` (`dev.mj31.logger.client.domain`): Pure Kotlin models and ports (interfaces) only — no use cases, no implementations.
   - `:data` (`dev.mj31.logger.client.data`): Data sources, repository implementations, Ktor/socket logic. Depends on `:domain`.
-  - `:app` (`dev.mj31.logger.client.app`): Compose Multiplatform Desktop UI screens & window application for macOS, Windows, and Linux. Depends on `:domain` and `:data`.
+  - `:app` (`dev.mj31.logger.client.app`): Use cases (`app/usecase`), MVI store, Compose Multiplatform Desktop UI screens & window application for macOS, Windows, and Linux, plus the string resources. Depends on `:domain` and `:data`.
 - **Language**: Kotlin 2.0+.
 - **Mandatory Named Arguments**: All function, constructor, and Composable invocations with 2 or more arguments MUST explicitly name their parameters (e.g. `LogEntry(id = "1", tag = "Network", message = "Connected")`).
 - **UI Framework**: Compose Multiplatform (Desktop / Skiko / Material3).
@@ -38,9 +38,11 @@ To execute Claude Code CLI in an isolated native macOS sandbox with **100% full 
 
 ## Key Gradle Commands
 - `gradlew :app:desktopRun` : Build and launch Compose Desktop UI application (macOS, Windows, Linux).
-- `gradlew :app:packageDmg` : Build standalone native macOS `.dmg` installer / `.app` bundle.
+- `gradlew :app:dmg` : Build the macOS `MJLogs` `.dmg` installer named after the full product version (`app/build/distributions/`).
+- `gradlew :app:packageDmg` : Underlying Compose task; leaves the installer in `build/compose/binaries/main/dmg/`.
 - `gradlew detektFormat` : Run Detekt 2.0 auto-formatting across all subprojects.
-- `gradlew detekt` : Perform static analysis code quality checks via Detekt 2.0.
+- `gradlew detekt` : Perform static analysis code quality checks via Detekt 2.0 (also runs `verifySourceLayout`).
+- `gradlew verifySourceLayout` : Fail if any source directory holds more than 5 Kotlin files.
 - `gradlew test` : Run multiplatform unit tests using Google Truth assertions across all subprojects (`:domain`, `:data`, `:app`).
 
 ## Subagent Routing Matrix
@@ -69,6 +71,11 @@ When handling specialized sub-tasks, activate or delegate to the dedicated Claud
 - `ui-guidelines.md`: Design system, dark mode & Compose Desktop rules.
 - `testing-rules.md`: Testing guidelines, Google Truth assertion standards & test location rules.
 - `git-workflow.md`: Commit rules & pre-commit hook enforcement.
+
+## Source Layout Rule
+- **One class/interface/object/enum per file**, named after the declaration. Exceptions: private helpers inside implementation files and inside tests; Composables stay grouped by screen or component.
+- At most **5 Kotlin files per directory**. A larger package must be split into meaningful sub-packages (by pipeline stage, by workflow, by feature area), never by arbitrary alphabetical chunks.
+- Enforced by the Gradle task `verifySourceLayout`, wired into `gradlew detekt`.
 
 ## Mandatory Workflow & Quality Gates
 1. **Auto-Format via Settings (`.claude/settings.json`)**: Detekt auto-formatting (`./gradlew detektFormat`) is configured in `.claude/settings.json` to automatically trigger post-edit on all `*.kt` and `*.kts` files across all modules.

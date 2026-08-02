@@ -8,14 +8,15 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(libs.kotlinx.coroutines.core)
-                implementation(libs.kotlinx.datetime)
+                api(libs.kotlinx.coroutines.core)
+                api(libs.kotlinx.datetime)
             }
         }
 
         val commonTest by getting {
             dependencies {
                 implementation(libs.kotlin.test)
+                implementation(libs.kotlinx.coroutines.test)
                 implementation(libs.truth)
             }
         }

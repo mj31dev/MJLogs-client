@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform) apply false
     alias(libs.plugins.compose.multiplatform) apply false
     alias(libs.plugins.compose.compiler) apply false
+    alias(libs.plugins.ksp) apply false
     alias(libs.plugins.detekt)
 }
 
@@ -15,6 +16,42 @@ detekt {
 dependencies {
     detektPlugins(libs.detekt.formatting)
 }
+
+/**
+ * Upper bound on how many Kotlin files may sit in one directory.
+ *
+ * Detekt cannot express this: its rules visit one file at a time and know nothing about the
+ * directory around it, so the layout is checked by the build instead.
+ */
+val maxFilesPerDirectory = 5
+
+tasks.register("verifySourceLayout") {
+    description = "Fails when a source directory holds more than $maxFilesPerDirectory Kotlin files."
+    group = "verification"
+
+    val sourceRoots = subprojects.map { it.projectDir.resolve("src") }
+    val projectRoot = rootDir
+
+    doLast {
+        val violations = sourceRoots
+            .filter { it.exists() }
+            .flatMap { root -> root.walkTopDown().filter { it.isDirectory }.toList() }
+            .mapNotNull { directory ->
+                val count = directory.listFiles().orEmpty().count { it.isFile && it.extension == "kt" }
+                if (count > maxFilesPerDirectory) "  ${directory.relativeTo(projectRoot)}: $count files" else null
+            }
+            .sorted()
+
+        if (violations.isNotEmpty()) {
+            throw GradleException(
+                "At most $maxFilesPerDirectory Kotlin files are allowed per directory; " +
+                    "split these into sub-packages:\n" + violations.joinToString(separator = "\n"),
+            )
+        }
+    }
+}
+
+tasks.named("detekt") { dependsOn("verifySourceLayout") }
 
 tasks.register("detektFormat") {
     description = "Reformats code according to Detekt 2.0 formatting rules across all subprojects."
