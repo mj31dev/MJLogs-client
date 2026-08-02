@@ -1,0 +1,52 @@
+MJLogs
+Copyright 2026 mj31dev
+Licensed under the Apache License, Version 2.0 (see LICENSE in the source repository:
+https://github.com/mj31dev/MJLogs-client).
+
+This application bundles third-party components.
+
+--------------------------------------------------------------------------------
+FFmpeg  —  GNU Lesser General Public License, version 3 or later
+--------------------------------------------------------------------------------
+
+This application uses libraries from the FFmpeg project (https://ffmpeg.org), version 8.0.1, in the
+build published by the JavaCPP Presets project as org.bytedeco:ffmpeg:8.0.1-1.5.13.
+
+Those libraries are licensed under the GNU LGPL version 3 or later. Their full text is distributed
+with this application as LGPL-3.0.txt; because the LGPL is written as a set of additional
+permissions on top of the GNU GPL, the GPL text it refers to is included as GPL-3.0.txt.
+
+The build carries no component under the GPL: it is configured with --enable-version3 and without
+--enable-gpl or --enable-nonfree, and contains no libx264, libx265 or libpostproc.
+
+The FFmpeg libraries are shipped as separate dynamically loaded shared libraries
+(libavcodec, libavformat, libavutil, libavfilter, libswscale, libswresample) and are not linked
+statically into this application, so they can be replaced with a different build of the same
+version. They live inside the archive Contents/app/ffmpeg-8.0.1-1.5.13-macosx-arm64.jar, which is an
+ordinary uncompressed-format zip archive.
+
+WRITTEN OFFER OF SOURCE CODE
+The complete corresponding source code of the FFmpeg libraries used here, together with the scripts
+used to build them, is available at:
+  * https://github.com/bytedeco/javacpp-presets/tree/1.5.13/ffmpeg   (build recipe)
+  * https://ffmpeg.org/releases/ffmpeg-8.0.1.tar.xz                  (upstream sources)
+This offer is valid for three years from the date this copy was distributed. A request may also be
+sent to the address published in the source repository above, and the sources will be provided on a
+physical medium for no more than the cost of that medium.
+
+--------------------------------------------------------------------------------
+Other components  —  Apache License 2.0
+--------------------------------------------------------------------------------
+
+Kotlin standard library, kotlinx.coroutines, kotlinx.datetime, Compose Multiplatform, Skiko
+(which embeds Skia, BSD-3-Clause), AndroidX Lifecycle, kotlin-inject, JavaCV and JavaCPP.
+
+JavaCV and JavaCPP are offered by their authors under Apache-2.0, GPLv2 or GPLv2-with-Classpath-
+Exception; this application takes them under the Apache License 2.0.
+
+--------------------------------------------------------------------------------
+Java runtime  —  GNU General Public License version 2 with the Classpath Exception
+--------------------------------------------------------------------------------
+
+A minimal OpenJDK runtime is embedded by jpackage. The Classpath Exception explicitly permits
+distributing it with an application under any licence.

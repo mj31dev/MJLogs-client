@@ -6,9 +6,9 @@ globs: "**/*.kt, **/*.kts"
 # Rule: Architecture Boundaries & Modularization
 
 1. **Gradle Module Boundaries**:
-   - `:domain` (`dev.mj31.logger.client.domain`): Pure business logic, models, use cases, repository interfaces. Zero dependencies on UI or Data.
+   - `:domain` (`dev.mj31.logger.client.domain`): Models and ports ONLY (repository, parser, compiler, player and file source interfaces). No use cases, no implementations, zero dependencies on UI or Data.
    - `:data` (`dev.mj31.logger.client.data`): Repositories implementations, network streams, database DAOs. Depends on `:domain`.
-   - `:app` (`dev.mj31.logger.client.app`): Compose Desktop UI screens, design tokens, main entry point. Depends on `:domain` and `:data`.
+   - `:app` (`dev.mj31.logger.client.app`): Use cases (`app/usecase`), MVI store, Compose Desktop UI screens, string resources, design tokens, main entry point. Depends on `:domain` and `:data`.
 
 2. **Dependency Direction**:
    - `:app` -> `:domain`, `:data`

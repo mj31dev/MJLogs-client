@@ -25,3 +25,12 @@ Thumbs.db
 # Misc
 .history/
 detekt-reports/
+
+# Material dropped into the project root for manual checks stays local: real logs and screencasts
+# routinely carry tokens, hostnames and other production data. Demo files live in samples/.
+/*.txt
+/*.log
+/*.mp4
+/*.MP4
+/*.mov
+/*.MOV

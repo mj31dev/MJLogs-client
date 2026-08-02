@@ -4,6 +4,11 @@ config:
 
 complexity:
   active: true
+  CyclomaticComplexMethod:
+    active: true
+    # An MVI intent dispatcher is a single exhaustive `when` over a sealed hierarchy: its branch
+    # count is a property of the contract, not accidental complexity.
+    ignoreSingleWhenExpression: true
   TooManyFunctions:
     active: true
     allowedFunctionsPerFile: 30
@@ -52,11 +57,21 @@ naming:
     active: true
     functionPattern: '[a-zA-Z][a-zA-Z0-9]*'
     ignoreAnnotated: ['Composable']
+    # Backtick test names are allowed in every test source set, including the JVM specific one.
+    excludes: ['**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/desktopTest/**']
 
 style:
   active: true
   UnusedImport:
     active: true
+  ReturnCount:
+    active: true
+    max: 3
+    # Guard clauses are the idiomatic way to express preconditions in Kotlin.
+    excludeGuardClauses: true
+  MagicNumber:
+    active: true
+    excludes: ['**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/desktopTest/**']
   WildcardImport:
     active: true
     excludeImports: ['java.util.*', 'kotlinx.coroutines.*']

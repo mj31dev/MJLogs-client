@@ -1,0 +1,140 @@
+08-01 10:23:46.480 D/Choreographer( 7630): layout pass took 15 ms
+08-01 10:23:46.985 E/TouchInput( 2384): frame skipped, 1 vsync missed
+08-01 10:23:47.816 W/Choreographer( 8527): frame skipped, 5 vsync missed
+08-01 10:23:48.155 D/WindowManager( 5005): tap at (745, 336)
+08-01 10:23:48.340 E/Compose( 2374): recomposition scope invalidated
+08-01 10:23:48.976 D/TouchInput( 3357): frame skipped, 4 vsync missed
+08-01 10:23:49.535 I/WindowManager( 9670): frame skipped, 1 vsync missed
+08-01 10:23:50.558 I/Choreographer( 3371): surface 3 resized to 1440x900
+08-01 10:23:50.752 W/Choreographer( 1263): surface 5 resized to 1440x900
+08-01 10:23:51.748 I/TouchInput( 7170): frame skipped, 2 vsync missed
+08-01 10:23:52.753 D/Renderer( 8486): frame skipped, 1 vsync missed
+08-01 10:23:53.719 D/Choreographer( 2219): tap at (1077, 67)
+08-01 10:23:54.735 D/TouchInput( 5707): recomposition scope invalidated
+08-01 10:23:55.670 D/TouchInput( 3186): tap at (301, 339)
+08-01 10:23:55.832 I/WindowManager( 9462): tap at (445, 691)
+08-01 10:23:56.274 I/WindowManager( 1286): recomposition scope invalidated
+08-01 10:23:56.720 D/Choreographer( 2479): frame skipped, 8 vsync missed
+08-01 10:23:57.015 I/Compose( 4790): tap at (1041, 286)
+08-01 10:23:57.674 W/WindowManager( 7642): recomposition scope invalidated
+08-01 10:23:58.133 I/WindowManager( 6317): frame skipped, 6 vsync missed
+08-01 10:23:59.051 D/WindowManager( 7098): tap at (24, 757)
+08-01 10:23:59.267 D/Choreographer( 5597): frame skipped, 2 vsync missed
+08-01 10:23:59.521 D/Compose( 4110): tap at (544, 446)
+08-01 10:24:00.462 D/WindowManager( 1810): frame skipped, 1 vsync missed
+08-01 10:24:01.361 D/Choreographer( 3797): layout pass took 20 ms
+08-01 10:24:01.994 D/Compose( 8916): tap at (532, 415)
+08-01 10:24:02.714 I/Renderer( 4604): recomposition scope invalidated
+08-01 10:24:03.327 W/WindowManager( 3862): frame skipped, 7 vsync missed
+08-01 10:24:03.827 I/Compose( 7763): frame skipped, 4 vsync missed
+08-01 10:24:04.369 D/Choreographer( 5546): recomposition scope invalidated
+08-01 10:24:05.107 E/TouchInput( 7300): layout pass took 35 ms
+08-01 10:24:05.666 I/WindowManager( 9025): recomposition scope invalidated
+08-01 10:24:05.816 D/Choreographer( 3491): layout pass took 30 ms
+08-01 10:24:06.500 E/Renderer( 3058): frame skipped, 8 vsync missed
+08-01 10:24:06.888 I/Renderer( 2629): frame skipped, 5 vsync missed
+08-01 10:24:07.110 D/Choreographer( 1171): frame skipped, 4 vsync missed
+08-01 10:24:07.810 D/WindowManager( 9962): layout pass took 22 ms
+08-01 10:24:08.212 D/WindowManager( 2328): recomposition scope invalidated
+08-01 10:24:08.625 D/WindowManager( 6936): recomposition scope invalidated
+08-01 10:24:09.473 D/Renderer( 6107): layout pass took 34 ms
+08-01 10:24:10.407 W/TouchInput( 9122): frame skipped, 8 vsync missed
+08-01 10:24:11.181 D/TouchInput( 1890): recomposition scope invalidated
+08-01 10:24:11.549 D/Choreographer( 7444): layout pass took 28 ms
+08-01 10:24:12.159 W/Compose( 9598): layout pass took 7 ms
+08-01 10:24:13.073 I/Compose( 1047): frame skipped, 7 vsync missed
+08-01 10:24:13.303 D/Compose( 6843): recomposition scope invalidated
+08-01 10:24:14.240 W/WindowManager( 8312): surface 3 resized to 1440x900
+08-01 10:24:14.587 D/WindowManager( 7153): frame skipped, 1 vsync missed
+08-01 10:24:14.772 I/Renderer( 5461): tap at (128, 620)
+08-01 10:24:15.265 E/Choreographer( 2070): frame skipped, 1 vsync missed
+08-01 10:24:15.439 W/Renderer( 3174): recomposition scope invalidated
+08-01 10:24:16.539 I/Renderer( 6928): recomposition scope invalidated
+08-01 10:24:17.491 W/Renderer( 7680): layout pass took 14 ms
+08-01 10:24:17.707 I/WindowManager( 2182): frame skipped, 9 vsync missed
+08-01 10:24:18.128 I/TouchInput( 4837): layout pass took 28 ms
+08-01 10:24:18.414 D/Choreographer( 5577): tap at (248, 798)
+08-01 10:24:19.144 D/Compose( 4858): layout pass took 14 ms
+08-01 10:24:19.451 D/Choreographer( 9312): layout pass took 22 ms
+08-01 10:24:20.139 D/Renderer( 8344): layout pass took 4 ms
+08-01 10:24:21.225 D/Compose( 4181): surface 5 resized to 1440x900
+08-01 10:24:21.451 D/TouchInput( 6729): frame skipped, 8 vsync missed
+08-01 10:24:21.823 D/Compose( 4333): surface 1 resized to 1440x900
+08-01 10:24:22.807 D/Compose( 4332): frame skipped, 7 vsync missed
+08-01 10:24:22.989 W/Choreographer( 3532): surface 4 resized to 1440x900
+08-01 10:24:23.793 I/TouchInput( 1841): recomposition scope invalidated
+08-01 10:24:24.262 I/Compose( 7401): layout pass took 28 ms
+08-01 10:24:25.157 D/Renderer( 6975): recomposition scope invalidated
+08-01 10:24:25.778 W/TouchInput( 7075): frame skipped, 1 vsync missed
+08-01 10:24:26.682 I/TouchInput( 2782): frame skipped, 6 vsync missed
+08-01 10:24:27.224 I/TouchInput( 7355): frame skipped, 5 vsync missed
+08-01 10:24:27.462 W/Choreographer( 3997): recomposition scope invalidated
+08-01 10:24:28.190 D/WindowManager( 5047): layout pass took 12 ms
+08-01 10:24:29.082 W/TouchInput( 7387): frame skipped, 1 vsync missed
+08-01 10:24:29.845 D/Compose( 7020): recomposition scope invalidated
+08-01 10:24:30.452 I/TouchInput( 8508): recomposition scope invalidated
+08-01 10:24:31.458 D/WindowManager( 6985): recomposition scope invalidated
+08-01 10:24:31.701 W/Choreographer( 6140): frame skipped, 9 vsync missed
+08-01 10:24:32.647 I/Renderer( 2087): frame skipped, 1 vsync missed
+08-01 10:24:33.425 I/Renderer( 2073): layout pass took 10 ms
+08-01 10:24:34.428 D/Compose( 9228): tap at (563, 467)
+08-01 10:24:35.519 I/Choreographer( 4259): frame skipped, 5 vsync missed
+08-01 10:24:35.855 D/Compose( 1795): surface 1 resized to 1440x900
+08-01 10:24:36.656 W/WindowManager( 9776): tap at (1187, 705)
+08-01 10:24:37.450 W/Compose( 6420): tap at (755, 591)
+08-01 10:24:38.382 D/TouchInput( 6122): tap at (606, 528)
+08-01 10:24:39.282 D/Renderer( 9399): recomposition scope invalidated
+08-01 10:24:39.804 W/TouchInput( 6815): frame skipped, 8 vsync missed
+08-01 10:24:40.265 D/Compose( 3190): surface 3 resized to 1440x900
+08-01 10:24:40.624 D/WindowManager( 2569): recomposition scope invalidated
+08-01 10:24:40.839 I/Compose( 8270): tap at (23, 57)
+08-01 10:24:41.605 E/WindowManager( 1413): surface 1 resized to 1440x900
+08-01 10:24:42.170 D/TouchInput( 3330): layout pass took 8 ms
+08-01 10:24:42.743 D/Choreographer( 5919): frame skipped, 9 vsync missed
+08-01 10:24:43.533 D/WindowManager( 8413): frame skipped, 9 vsync missed
+08-01 10:24:43.862 D/Renderer( 1860): tap at (79, 126)
+08-01 10:24:44.284 I/WindowManager( 9313): frame skipped, 9 vsync missed
+08-01 10:24:44.449 D/TouchInput( 4918): tap at (669, 196)
+08-01 10:24:44.987 W/Choreographer( 8163): frame skipped, 8 vsync missed
+08-01 10:24:45.879 D/Compose( 3369): layout pass took 27 ms
+08-01 10:24:46.062 D/Renderer( 1682): frame skipped, 3 vsync missed
+08-01 10:24:46.353 I/Renderer( 9747): layout pass took 4 ms
+08-01 10:24:47.415 I/WindowManager( 1564): frame skipped, 2 vsync missed
+08-01 10:24:48.433 W/Renderer( 5824): layout pass took 32 ms
+08-01 10:24:48.909 D/Compose( 6256): tap at (525, 289)
+08-01 10:24:49.846 E/Choreographer( 9497): recomposition scope invalidated
+08-01 10:24:50.787 D/WindowManager( 5704): surface 1 resized to 1440x900
+08-01 10:24:51.111 D/Choreographer( 2567): recomposition scope invalidated
+08-01 10:24:51.764 I/TouchInput( 3603): surface 3 resized to 1440x900
+08-01 10:24:52.204 W/TouchInput( 2713): recomposition scope invalidated
+08-01 10:24:52.997 D/Renderer( 4377): tap at (176, 432)
+08-01 10:24:53.457 D/Choreographer( 3078): recomposition scope invalidated
+08-01 10:24:54.151 I/Choreographer( 8377): layout pass took 24 ms
+08-01 10:24:54.978 I/Compose( 4785): surface 3 resized to 1440x900
+08-01 10:24:55.257 D/TouchInput( 3555): layout pass took 14 ms
+08-01 10:24:55.660 I/Choreographer( 5238): layout pass took 24 ms
+08-01 10:24:56.556 E/TouchInput( 5872): tap at (786, 154)
+08-01 10:24:57.151 D/Renderer( 1206): frame skipped, 2 vsync missed
+08-01 10:24:57.709 W/WindowManager( 5214): layout pass took 34 ms
+08-01 10:24:58.477 I/Renderer( 4745): layout pass took 29 ms
+08-01 10:24:59.322 D/Renderer( 4971): recomposition scope invalidated
+08-01 10:25:00.273 D/TouchInput( 7706): surface 1 resized to 1440x900
+08-01 10:25:00.953 I/TouchInput( 5116): frame skipped, 6 vsync missed
+08-01 10:25:01.659 D/TouchInput( 4358): surface 4 resized to 1440x900
+08-01 10:25:02.543 I/Renderer( 4011): layout pass took 35 ms
+08-01 10:25:03.094 I/Renderer( 2007): recomposition scope invalidated
+08-01 10:25:03.257 D/WindowManager( 7561): tap at (543, 111)
+08-01 10:25:03.946 E/WindowManager( 8686): layout pass took 15 ms
+08-01 10:25:04.753 I/TouchInput( 3050): surface 3 resized to 1440x900
+08-01 10:25:05.701 W/Compose( 4045): recomposition scope invalidated
+08-01 10:25:06.344 D/Compose( 8020): recomposition scope invalidated
+08-01 10:25:07.132 I/Compose( 6319): surface 1 resized to 1440x900
+08-01 10:25:08.084 E/Choreographer( 2179): layout pass took 39 ms
+08-01 10:25:08.905 D/Choreographer( 6676): recomposition scope invalidated
+08-01 10:25:09.858 D/WindowManager( 4233): tap at (185, 684)
+08-01 10:25:10.514 I/Choreographer( 7865): tap at (239, 568)
+08-01 10:25:10.903 W/WindowManager( 9050): layout pass took 37 ms
+08-01 10:25:11.305 I/Choreographer( 5863): recomposition scope invalidated
+08-01 10:25:12.315 I/WindowManager( 1336): frame skipped, 7 vsync missed
+08-01 10:25:13.089 D/Compose( 4495): frame skipped, 2 vsync missed
+08-01 10:25:13.974 D/TouchInput( 4452): surface 4 resized to 1440x900

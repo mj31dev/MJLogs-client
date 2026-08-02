@@ -10,8 +10,14 @@ private val DarkColorScheme = darkColorScheme(
     background = DarkBackground,
     surface = DarkSurface,
     surfaceVariant = DarkSurfaceVariant,
+    outline = DarkOutline,
     onBackground = DarkOnBackground,
     onSurface = DarkOnSurface,
+    onSurfaceVariant = DarkMuted,
+    error = LogLevelError,
+    errorContainer = DarkErrorContainer,
+    onError = DarkBackground,
+    onErrorContainer = DarkOnErrorContainer,
 )
 
 @Composable

@@ -1,0 +1,94 @@
+<resources>
+    <!-- Window -->
+    <string name="app_window_title">MJLogs - screencast and log session</string>
+
+    <!-- Transient notices -->
+    <string name="message_dismiss">Dismiss</string>
+    <string name="message_import_success">%1$s: %2$s records, format "%3$s"</string>
+    <string name="message_record_outside_video">This record is outside the recorded video</string>
+    <string name="message_select_record_first">Select a log record first</string>
+    <string name="message_load_screencast_first">Load a screencast first</string>
+    <string name="message_synchronized_with_line">Synchronized with line %1$s</string>
+    <string name="message_synchronized_with_time">Synchronized: this frame is %1$s</string>
+
+    <!-- Screencast pane -->
+    <string name="video_title">Screencast</string>
+    <string name="video_no_file">No file loaded</string>
+    <string name="video_open">Open video…</string>
+    <string name="video_replace">Replace…</string>
+    <string name="video_frame_description">Screencast frame</string>
+    <string name="video_playback_unavailable">Playback unavailable</string>
+    <string name="video_decoding">Decoding…</string>
+    <string name="video_decoding_description">Waiting for the first frame of %1$s</string>
+    <string name="video_empty_title">No screencast loaded</string>
+    <string name="video_empty_description">Open a video file to start; the log list works independently until you synchronize them.</string>
+    <string name="video_play">Play</string>
+    <string name="video_pause">Pause</string>
+
+    <!-- Log pane -->
+    <string name="log_title">Log session</string>
+    <string name="log_record_count">%1$s records</string>
+    <string name="log_record_count_filtered">%1$s of %2$s records</string>
+    <string name="log_add_files">Add logs…</string>
+    <string name="log_empty_title">No log files loaded</string>
+    <string name="log_empty_description">Add one or more .txt files. Their formats are detected automatically and every file is merged into a single chronological session.</string>
+    <string name="log_no_match_title">No record matches the filters</string>
+    <string name="log_no_match_description">%1$s records are loaded but hidden by the current filters.</string>
+    <string name="log_reset_filters">Reset filters</string>
+
+    <!-- Filters -->
+    <string name="filter_query_placeholder">Filter by tag, message or raw line…</string>
+    <string name="filter_query_clear">clear</string>
+    <string name="filter_around_playhead">Around playhead:</string>
+    <string name="filter_window_all">all</string>
+    <string name="filter_window_5s">±5s</string>
+    <string name="filter_window_15s">±15s</string>
+    <string name="filter_window_60s">±60s</string>
+    <string name="source_chip_subtitle">%1$s records · %2$s</string>
+    <string name="source_chip_skipped">, %1$s skipped</string>
+
+    <!-- Synchronization bar -->
+    <string name="sync_state_synchronized">Timelines synchronized</string>
+    <string name="sync_state_independent">Timelines independent</string>
+    <string name="sync_follow_video">Follow video</string>
+    <string name="sync_unlink">Unlink</string>
+    <string name="sync_action">Synchronize</string>
+    <string name="sync_action_again">Re-sync here</string>
+    <string name="sync_hint">Select a log record, move the playhead, then press Synchronize</string>
+    <string name="sync_no_overlap">no overlap with the log timeline</string>
+    <string name="sync_coverage">logs covered %1$s .. %2$s</string>
+    <string name="sync_details">video %1$s = log %2$s  |  %3$s</string>
+    <string name="sync_unknown_time">--</string>
+
+    <!-- Exact time typed on the current frame -->
+    <string name="sync_frame_time_label">Time on this frame</string>
+    <string name="sync_frame_time_hint">Type the wall clock time visible in the frame to synchronize without selecting a record.</string>
+    <string name="sync_frame_time_apply">Use this time</string>
+    <string name="sync_frame_time_pick">Pick…</string>
+    <string name="sync_frame_time_picker_title">Time shown in this frame</string>
+    <string name="sync_frame_time_picker_hint">Pick the date and the hour; the seconds already typed are kept.</string>
+    <string name="sync_frame_time_picker_confirm">OK</string>
+    <string name="sync_frame_time_picker_cancel">Cancel</string>
+    <string name="sync_frame_time_invalid">Enter a time such as 2026-06-29 18:50:07.267 or 18:50:07</string>
+
+    <!-- Format wizard -->
+    <string name="format_dialog_confirm_title">Check how %1$s was read</string>
+    <string name="format_dialog_title">Describe the format of %1$s</string>
+    <string name="format_suggestion_hint">The fields below are pre-filled with the layout inferred from these lines. Check them and apply, or pick another starting point.</string>
+    <string name="format_timestamp_label">Timestamp pattern</string>
+    <string name="format_structure_label">Line structure</string>
+    <string name="format_apply">Apply</string>
+    <string name="format_use_mine">Use my format</string>
+    <string name="format_import_as_detected">Import as detected</string>
+    <string name="format_skip_file">Skip file</string>
+    <string name="format_preset_iso">ISO date</string>
+    <string name="format_preset_logcat">Android logcat</string>
+    <string name="format_preset_time_only">Time only</string>
+    <string name="format_preset_epoch">Epoch millis</string>
+    <string name="format_preset_custom_prefix">Custom prefix</string>
+    <string name="format_help">Timestamp tokens: yyyy, yy, MMM, MM, dd, HH, mm, ss, SSS, XXX, epochMillis, epochSeconds. Everything else is matched literally.\nStructure placeholders: {timestamp} (required), {level}, {tag}, {message}, and {any} to skip a varying part such as a counter or a thread id ({any} may be repeated).\nSpaces match any run of whitespace; punctuation such as &lt; &gt; ~ | is matched literally, and {{ }} stand for literal braces.</string>
+
+    <!-- Format preview -->
+    <string name="preview_unavailable">No preview while the format is invalid</string>
+    <string name="preview_matched_lines">%1$s of %2$s sample lines become records</string>
+</resources>

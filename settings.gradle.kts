@@ -13,7 +13,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "logger-client"
+rootProject.name = "MJLogs-client"
 include(":domain")
 include(":data")
 include(":app")
