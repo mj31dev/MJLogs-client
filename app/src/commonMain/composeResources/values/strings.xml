@@ -2,6 +2,21 @@
     <!-- Window -->
     <string name="app_window_title">MJLogs - screencast and log session</string>
 
+    <!-- About and legal notices -->
+    <string name="legal_menu">Help</string>
+    <string name="legal_menu_item">About MJLogs</string>
+    <string name="legal_window_title">About MJLogs</string>
+    <string name="about_app_name">MJLogs</string>
+    <string name="about_version">Version %1$s</string>
+    <string name="about_copyright">Copyright 2026 mj31dev</string>
+    <string name="about_license">Licensed under the Apache License, Version 2.0.</string>
+    <string name="about_bundled">Plays a screencast beside the log files it belongs to. Decoding is done by FFmpeg, loaded as a shared library and licensed under the GNU LGPL version 3 or later; the remaining components are under permissive licenses.</string>
+    <string name="about_show_notices">Licenses and notices</string>
+    <string name="about_back">Back to About</string>
+    <string name="legal_loading">Reading the licence texts…</string>
+    <string name="legal_unavailable_title">No licence text next to this build</string>
+    <string name="legal_unavailable_description">The texts travel with the installed application: in the folder named Licenses in the disk image or installer, and under app/resources inside the application itself.</string>
+
     <!-- Transient notices -->
     <string name="message_dismiss">Dismiss</string>
     <string name="message_import_success">%1$s: %2$s records, format "%3$s"</string>

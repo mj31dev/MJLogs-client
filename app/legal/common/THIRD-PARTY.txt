@@ -1,9 +1,18 @@
 MJLogs
 Copyright 2026 mj31dev
-Licensed under the Apache License, Version 2.0 (see LICENSE in the source repository:
-https://github.com/mj31dev/MJLogs-client).
+Licensed under the Apache License, Version 2.0, whose full text is distributed with this application
+as LICENSE.txt next to this notice. The sources are published at
+https://github.com/mj31dev/MJLogs-client.
 
 This application bundles third-party components.
+
+WHERE TO FIND THIS NOTICE
+This file and the licence texts it refers to travel with every copy of the application:
+  * in the disk image or installer, in the folder named Licenses, next to the application itself;
+  * inside the installed application, under Contents/app/resources on macOS and under app/resources
+    on Windows and Linux;
+  * in the application itself, under "About MJLogs": in the application menu on macOS, in the
+    "Help" menu on Windows and Linux.
 
 --------------------------------------------------------------------------------
 FFmpeg  —  GNU Lesser General Public License, version 3 or later

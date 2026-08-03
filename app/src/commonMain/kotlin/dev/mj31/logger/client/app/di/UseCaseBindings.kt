@@ -4,8 +4,10 @@ import dev.mj31.logger.client.app.usecase.ingest.ImportLogFileUseCase
 import dev.mj31.logger.client.app.usecase.ingest.ImportLogFileWithFormatUseCase
 import dev.mj31.logger.client.app.usecase.ingest.source.LogSourceAssembler
 import dev.mj31.logger.client.app.usecase.ingest.source.LogSourceLoader
+import dev.mj31.logger.client.app.usecase.legal.ReadLegalNoticesUseCase
 import dev.mj31.logger.client.app.usecase.session.MergeLogSourcesUseCase
 import dev.mj31.logger.client.domain.format.detect.LogFormatDetector
+import dev.mj31.logger.client.domain.repository.LegalNoticeRepository
 import dev.mj31.logger.client.domain.format.parse.LogLineParserFactory
 import dev.mj31.logger.client.domain.source.IdGenerator
 import dev.mj31.logger.client.domain.source.TextFileDataSource
@@ -51,6 +53,10 @@ interface UseCaseBindings {
         detector = detector,
         dispatcher = dispatcher,
     )
+
+    @Provides
+    fun readLegalNotices(repository: LegalNoticeRepository): ReadLegalNoticesUseCase =
+        ReadLegalNoticesUseCase(repository = repository)
 
     @Provides
     fun importLogFileWithFormat(

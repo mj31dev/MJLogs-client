@@ -29,10 +29,23 @@ Obligations honoured here, each verified against the artifact that actually ship
   Nothing is linked statically, so the user can substitute another build of the same version.
 - **Licence text travels with the binaries.** `Contents/app/resources/LGPL-3.0.txt`, plus
   `GPL-3.0.txt`, because the LGPL is written as additional permissions on top of the GPL and refers
-  to its text.
+  to its text, and `LICENSE.txt` for the project itself.
 - **Third-party notice and written offer of source.** `Contents/app/resources/THIRD-PARTY.txt`,
   naming the exact version (FFmpeg 8.0.1 as packaged by JavaCPP Presets 1.5.13) and where to get its
   corresponding source.
+- **The notice can actually be read.** macOS shows an application bundle as one opaque file, so a
+  text that only lives inside it is not notice to anyone. The same four files therefore also sit in
+  a `Licenses` folder in the root of the disk image (`--mac-dmg-content`), next to the application,
+  and the application itself displays them under **About MJLogs** — in the application menu on
+  macOS, in the **Help** menu on Windows and Linux, which have no application menu — where the
+  summary of what is bundled leads to the full texts. The MSI and DEB installers additionally carry
+  `LICENSE.txt` as their installer licence.
+
+`app/legal/common/` is the single source for all of this: `app/build.gradle.kts` points
+`appResourcesRootDir` at it, stages it into the disk image and the app reads it back at runtime, and
+`LegalNoticeAssetsTest` fails the build if a file goes missing, if the shipped `LICENSE.txt` drifts
+from the repository `LICENSE`, or if the FFmpeg version in the version catalog stops matching the one
+the written offer names.
 
 One thing to keep in mind for later: the bundle currently carries only an ad-hoc signature. Signing
 it with a Developer ID and notarising it would not change the licence position — LGPL asks for a
