@@ -6,22 +6,6 @@ Welcome to the `MJLogs` Kotlin Multiplatform (KMP) Desktop codebase (repository 
 - **Chat Responses**: Always respond to the user in the chat in the language they used to communicate (e.g. Russian if the user speaks Russian, English if they speak English).
 - **Repository Files**: ALL files, code, comments, KMP sources, documentation, git commit messages, subagent configurations, skills, rules, and commands MUST be written strictly in **English**.
 
-## Isolated macOS Seatbelt Sandbox (Zero Permission Prompts)
-To execute Claude Code CLI in an isolated native macOS sandbox with **100% full project access + internet access** while completely isolating the rest of the host system (blocking access to `~/.ssh`, host OS, and other directories), run:
-```bash
-./scripts/run-sandbox.sh
-```
-- **Capabilities & Host Isolation**:
-  - `Project Access`: Full Read/Write access strictly inside `/Users/mj/Desktop/logger/client`.
-  - `Network Access`: Standard outbound internet access enabled.
-  - `Host Isolation`: `~/.ssh`, `~/.aws`, system files, and other Desktop folders are completely invisible and blocked by macOS kernel.
-  - `Offline mode`: Run `./scripts/run-sandbox.sh --offline` to block 100% of network traffic.
-- **Launcher Methods**:
-  1. Terminal: `./scripts/run-sandbox.sh`
-  2. Android Studio UI: Select `Run Claude Sandbox` configuration and click **Play ▶️**.
-  3. macOS Finder: Double-click `scripts/run-sandbox.command`.
-  4. Claude Desktop GUI App: Run `./scripts/setup-claude-desktop-mcp.sh` to link the sandbox via MCP protocol (`claude_desktop_config.json`).
-
 ## Multi-Module Architecture & Tech Stack
 - **Target Platform**: Desktop (JVM / Compose Multiplatform Desktop for macOS, Windows, Linux).
 - **Gradle Submodules**:

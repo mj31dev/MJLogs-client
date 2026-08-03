@@ -230,8 +230,6 @@ FFmpeg binaries, which dynamic loading and the licence text shipped inside the a
 ./gradlew detekt    # static analysis, plus the directory size check
 ```
 
-449 tests, split as 62 in `:domain`, 119 in `:data` and 268 in `:app`.
-
 Beyond plain unit tests the suite covers three more levels:
 
 - **UI** — `LogPaneTest`, `LogRowTest`, `VideoPaneTest`, `SyncBarTest`, `FormatWizardDialogTest` and
