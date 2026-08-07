@@ -1,68 +1,80 @@
-# Claude Code Workspace Configuration & Master Prompt
+# MJLogs client
 
-Welcome to the `MJLogs` Kotlin Multiplatform (KMP) Desktop codebase (repository `MJLogs-client`).
+Compose Multiplatform **Desktop** application (macOS, Windows, Linux) that plays a screencast beside
+the log files recorded with it. Kotlin 2.0+, Apache 2.0.
 
-## Language & Communication Policy
-- **Chat Responses**: Always respond to the user in the chat in the language they used to communicate (e.g. Russian if the user speaks Russian, English if they speak English).
-- **Repository Files**: ALL files, code, comments, KMP sources, documentation, git commit messages, subagent configurations, skills, rules, and commands MUST be written strictly in **English**.
+## Language policy
 
-## Multi-Module Architecture & Tech Stack
-- **Target Platform**: Desktop (JVM / Compose Multiplatform Desktop for macOS, Windows, Linux).
-- **Gradle Submodules**:
-  - `:domain` (`dev.mj31.logger.client.domain`): Pure Kotlin models and ports (interfaces) only — no use cases, no implementations.
-  - `:data` (`dev.mj31.logger.client.data`): Data sources, repository implementations, Ktor/socket logic. Depends on `:domain`.
-  - `:app` (`dev.mj31.logger.client.app`): Use cases (`app/usecase`), MVI store, Compose Multiplatform Desktop UI screens & window application for macOS, Windows, and Linux, plus the string resources. Depends on `:domain` and `:data`.
-- **Language**: Kotlin 2.0+.
-- **Mandatory Named Arguments**: All function, constructor, and Composable invocations with 2 or more arguments MUST explicitly name their parameters (e.g. `LogEntry(id = "1", tag = "Network", message = "Connected")`).
-- **UI Framework**: Compose Multiplatform (Desktop / Skiko / Material3).
-- **Architecture Pattern**: Clean Architecture + MVI (Model-View-Intent) Unidirectional Data Flow.
-- **Testing & Assertions**: Google Truth (`com.google.truth:truth:1.4.4`) fluent assertions (`assertThat(actual).isEqualTo(expected)`).
-- **Static Analysis & Formatting**: Standard Detekt 2.0 (`dev.detekt:2.0.0-alpha.5`) + standard `detekt-formatting` ruleset (`ArgumentListWrapping`, `ParameterListWrapping`, `TrailingCommaOnCallSite`).
-- **Git Pre-commit Hook**: Automatically executes Detekt auto-formatting (`./gradlew detektFormat detekt`) on modified staged files before committing.
+Everything committed to this repository — code, comments, KDoc, build scripts, markdown, resource
+strings, hook scripts, agent and skill definitions — is written in **English**. Chat replies are
+written in the language the user wrote in.
 
-## Key Gradle Commands
-- `gradlew :app:desktopRun` : Build and launch Compose Desktop UI application (macOS, Windows, Linux).
-- `gradlew :app:dmg` : Build the macOS `MJLogs` `.dmg` installer named after the full product version (`app/build/distributions/`).
-- `gradlew :app:packageDmg` : Underlying Compose task; leaves the installer in `build/compose/binaries/main/dmg/`.
-- `gradlew detektFormat` : Run Detekt 2.0 auto-formatting across all subprojects.
-- `gradlew detekt` : Perform static analysis code quality checks via Detekt 2.0 (also runs `verifySourceLayout`).
-- `gradlew verifySourceLayout` : Fail if any source directory holds more than 5 Kotlin files.
-- `gradlew test` : Run multiplatform unit tests using Google Truth assertions across all subprojects (`:domain`, `:data`, `:app`).
+## Modules
 
-## Subagent Routing Matrix
-When handling specialized sub-tasks, activate or delegate to the dedicated Claude Code subagents located in `.claude/agents/`:
-1. **Architect** (`.claude/agents/architect.md`, `model: opus`): Domain modeling, multi-module boundaries (`:domain`, `:data`, `:app`), API design.
-2. **UI/UX Designer** (`.claude/agents/ui-ux-designer.md`, `model: sonnet`): Compose Desktop UI design, aesthetics, dark modes, animations.
-3. **UI Verifier** (`.claude/agents/ui-verifier.md`, `model: sonnet`): UI visual verification, component layout inspection, rendering checks.
-4. **Test Engineer** (`.claude/agents/test-engineer.md`, `model: sonnet`): TDD, unit test creation with Google Truth, coroutine test suits.
-5. **Code Reviewer** (`.claude/agents/code-reviewer.md`, `model: sonnet`): Code quality audits, Detekt enforcement, boundary reviews.
-6. **Sec & Perf Expert** (`.claude/agents/sec-perf-expert.md`, `model: sonnet`): Memory usage, coroutine thread safety, desktop OS integration security.
-7. **DevOps & Release Agent** (`.claude/agents/devops-release.md`, `model: haiku`): Git hook maintenance, Gradle task optimization, Detekt rule setup.
+| Module    | Package                            | Holds                                                                   |
+| --------- | ---------------------------------- | ----------------------------------------------------------------------- |
+| `:domain` | `dev.mj31.logger.client.domain`    | Immutable models and ports (interfaces) **only**. No use cases, no impls. |
+| `:data`   | `dev.mj31.logger.client.data`      | Port implementations: parsers, file sources, players, repositories.       |
+| `:app`    | `dev.mj31.logger.client.app`       | Use cases, MVI store, Compose UI, string resources, DI, entry point.      |
 
-## Installed Skill Modules (`.claude/skills/`)
-- `compose-desktop-ui`: Compose Desktop UI best practices & code playbooks.
-- `detekt-formatting`: Detekt auto-formatting & SARIF report fix automation.
-- `kmp-desktop-architecture`: Layer boundaries, coroutine flows & clean architecture.
-- `kmp-data-persistence-ktor`: Ktor network streaming, Room/SQLDelight, memory buffering.
-- `desktop-os-integration`: System tray, native file pickers, window state restoration.
-- `ui-inspection-verification`: Visual layout debugging & contrast checking.
-- `test-automation-tdd`: TDD workflows & coroutine test dispatchers.
+Dependencies run one way: `:app` → `:domain`, `:data`; `:data` → `:domain`; `:domain` depends on
+nothing. Use cases live in `app/usecase`, never in `:domain` — the domain layer carries no behaviour
+beyond what a model can answer about itself.
 
-## Modular Rules (`.claude/rules/`)
-- `code-style.md`: Kotlin conventions, mandatory named arguments & Detekt formatting.
-- `architecture-boundaries.md`: Package rules for `:domain`, `:data`, `:app`.
-- `mvi-unidirectional-data-flow.md`: MVI state management pattern.
-- `ui-guidelines.md`: Design system, dark mode & Compose Desktop rules.
-- `testing-rules.md`: Testing guidelines, Google Truth assertion standards & test location rules.
-- `git-workflow.md`: Commit rules & pre-commit hook enforcement.
+## Commands
 
-## Source Layout Rule
-- **One class/interface/object/enum per file**, named after the declaration. Exceptions: private helpers inside implementation files and inside tests; Composables stay grouped by screen or component.
-- At most **5 Kotlin files per directory**. A larger package must be split into meaningful sub-packages (by pipeline stage, by workflow, by feature area), never by arbitrary alphabetical chunks.
-- Enforced by the Gradle task `verifySourceLayout`, wired into `gradlew detekt`.
+```bash
+./gradlew detekt              # formats and fails on what the formatter cannot fix; runs verifySourceLayout
+./gradlew test                # unit tests across :domain, :data, :app
+./gradlew :app:desktopTest    # includes the Compose UI tests in app/src/desktopTest
+./gradlew :app:desktopRun     # launch the application
+./gradlew :app:dmg            # macOS installer into app/build/distributions
+```
 
-## Mandatory Workflow & Quality Gates
-1. **Auto-Format via Settings (`.claude/settings.json`)**: Detekt auto-formatting (`./gradlew detektFormat`) is configured in `.claude/settings.json` to automatically trigger post-edit on all `*.kt` and `*.kts` files across all modules.
-2. **Git Pre-commit Automation**: The Git pre-commit hook (`.githooks/pre-commit`) automatically detects modified staged Kotlin files, applies Detekt auto-formatting, re-stages the formatted files, and verifies static analysis checks.
-3. **Zero Detekt Warnings**: No code changes may introduce new Detekt violations.
-4. **Testing Gate**: Always run `./gradlew test` to ensure zero test regressions.
+There is no separate format task: `detekt` runs with `autoCorrect` on, so it is both the formatter
+and the gate. A `Stop` hook runs it at the end of any turn that changed Kotlin files, and the
+`.githooks/pre-commit` hook runs it again before a commit is created (`./scripts/setup-hooks.sh`
+enables it).
+
+## Rules that are not visible in the code
+
+**Named arguments.** Every call, constructor and Composable invocation with two or more arguments
+names its parameters: `LogEntry(id = "1", tag = "Network", message = "Connected")`. Enforced by
+Detekt `style > NamedArguments`.
+
+**One declaration per file**, named after it. Exceptions: private helpers inside an implementation
+or test file, and Composables, which are grouped by screen or component.
+
+**At most 5 Kotlin files per directory.** A fuller package is split into sub-packages by meaning —
+pipeline stage, workflow, feature area — never into alphabetical chunks. Enforced by the Gradle task
+`verifySourceLayout`, which `detekt` depends on.
+
+**No hardcoded user-visible strings.** They live in
+`app/src/commonMain/composeResources/values/strings.xml` and reach the screen through
+`stringResource`. Messages produced by the store travel as `UiText` (`app/view/text/UiText.kt`) —
+a string resource plus arguments — and are resolved by the composable that renders them.
+
+**MVI, one direction.** `LogPlayerState` is a single immutable data class updated through `copy()`
+inside a `MutableStateFlow`; derived state is assembled only in `LogPlayerStateAssembler`. User
+actions are `LogPlayerIntent` values handled in `LogPlayerStore.handleIntent`; composables receive
+one `onIntent: (LogPlayerIntent) -> Unit` and never call behaviour directly. Anything that must
+happen exactly once — a notification, a native file dialog — is a `LogPlayerEffect` delivered
+through a `Channel`, never stored in the state, where a recomposition would replay it.
+
+**Tests** live in `src/commonTest` (multiplatform) or `src/desktopTest` (JVM and Compose UI) and
+assert with Google Truth: `assertThat(actual).isEqualTo(expected)`. Every change ships with tests;
+the order in which they are written is free. Never delete or comment out a failing assertion.
+
+**Legal texts are load-bearing.** `app/legal/` (`LGPL-3.0.txt`, `GPL-3.0.txt`, `THIRD-PARTY.txt`) is
+wired into packaging through `appResourcesRootDir` and read at runtime by the About window. FFmpeg
+is LGPL and must stay dynamically linked. Do not remove or bypass that configuration.
+
+## Agents, skills, commands
+
+`.claude/agents/` holds three analysts — `architect`, `code-reviewer`, `test-engineer`; the first two
+are read-only, the third may write inside test directories. `.claude/skills/` holds `feature`
+(invoked explicitly as `/feature`; it runs reconnaissance, then grilling, then a layered checklist),
+`log-format-pipeline`, `compose-ui-testing` and `mvi-logplayer`, which load themselves when relevant.
+`.claude/commands/` holds `/review` and `/verify-ui`.
+
+Commits and pushes are denied to Claude Code in `.claude/settings.json`: the user creates them.
