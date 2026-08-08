@@ -3,6 +3,7 @@ package dev.mj31.logger.client.app.usecase.timeline
 import com.google.common.truth.Truth.assertThat
 import dev.mj31.logger.client.app.fake.log.TestLogEntries
 import dev.mj31.logger.client.domain.sync.SyncAnchor
+import dev.mj31.logger.client.domain.sync.SyncOrigin
 import kotlin.test.Test
 import dev.mj31.logger.client.domain.model.log.LogEntry
 
@@ -11,7 +12,11 @@ class FindEntryAtVideoPositionUseCaseTest {
     private val findEntry = FindEntryAtVideoPositionUseCase()
 
     /** Video second 0 corresponds to [TestLogEntries.BASE]. */
-    private val anchor = SyncAnchor(logTimestamp = TestLogEntries.BASE, videoPositionMillis = 0L)
+    private val anchor = SyncAnchor(
+        logTimestamp = TestLogEntries.BASE,
+        videoPositionMillis = 0L,
+        origin = SyncOrigin.SELECTED_ENTRY,
+    )
 
     private val entries: List<LogEntry> = listOf(
         TestLogEntries.entryAt(offsetMillis = 0L, id = "e0"),
@@ -103,7 +108,11 @@ class FindEntryAtVideoPositionUseCaseTest {
     @Test
     fun `the mapping honours the anchor offset`() {
         // The user pinned the entry at BASE + 5s to second 20 of the video, so the video starts 15s earlier.
-        val shifted = SyncAnchor(logTimestamp = TestLogEntries.at(offsetMillis = 5_000L), videoPositionMillis = 20_000L)
+        val shifted = SyncAnchor(
+            logTimestamp = TestLogEntries.at(offsetMillis = 5_000L),
+            videoPositionMillis = 20_000L,
+            origin = SyncOrigin.SELECTED_ENTRY,
+        )
 
         assertThat(findEntry(entries = entries, anchor = shifted, videoPositionMillis = 20_000L)?.id).isEqualTo("e3")
         assertThat(findEntry(entries = entries, anchor = shifted, videoPositionMillis = 15_000L)?.id).isEqualTo("e0")

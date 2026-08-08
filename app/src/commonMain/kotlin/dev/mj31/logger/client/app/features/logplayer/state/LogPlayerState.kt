@@ -4,6 +4,7 @@ import dev.mj31.logger.client.domain.model.log.LogEntry
 import dev.mj31.logger.client.domain.model.log.LogFilter
 import dev.mj31.logger.client.app.features.logplayer.state.ui.LogSourceUi
 import dev.mj31.logger.client.app.features.logplayer.state.ui.VideoUiState
+import dev.mj31.logger.client.app.features.logplayer.state.ui.AutoSyncUiState
 import dev.mj31.logger.client.app.features.logplayer.state.ui.SyncUiState
 import dev.mj31.logger.client.app.features.logplayer.state.format.FormatRequestUiState
 
@@ -24,6 +25,7 @@ data class LogPlayerState(
     val followVideo: Boolean = true,
     val video: VideoUiState = VideoUiState(),
     val sync: SyncUiState = SyncUiState(),
+    val autoSync: AutoSyncUiState = AutoSyncUiState(),
     val formatRequest: FormatRequestUiState? = null,
     val isImporting: Boolean = false,
 ) {

@@ -1,11 +1,15 @@
 package dev.mj31.logger.client.app.features.logplayer.state.ui
 
 import dev.mj31.logger.client.app.usecase.timeline.TimelineOverlap
+import dev.mj31.logger.client.domain.sync.SyncOrigin
 import kotlinx.datetime.Instant
 
-/** Presentation model of the manual synchronization state. */
+/** Presentation model of the synchronization state, however the anchor was arrived at. */
 data class SyncUiState(
     val isSynced: Boolean = false,
+    /** Where the current anchor came from, and how far it may be off; both are read from it. */
+    val origin: SyncOrigin? = null,
+    val accuracyMillis: Long = 0L,
     val anchorEntryId: String? = null,
     val anchorVideoPositionMillis: Long = 0L,
     val logTimeAtPlayhead: Instant? = null,

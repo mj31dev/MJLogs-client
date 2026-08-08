@@ -46,6 +46,13 @@ kotlin {
                 implementation(libs.ffmpeg)
                 implementation(nativesOf(dependency = libs.ffmpeg))
                 implementation(nativesOf(dependency = libs.javacpp))
+
+                // Reads the clock a screencast displays. Leptonica is Tesseract's image layer and
+                // is named explicitly so that its native bundle is pinned to the host platform too.
+                implementation(libs.tesseract)
+                implementation(nativesOf(dependency = libs.tesseract))
+                implementation(libs.leptonica)
+                implementation(nativesOf(dependency = libs.leptonica))
             }
         }
 

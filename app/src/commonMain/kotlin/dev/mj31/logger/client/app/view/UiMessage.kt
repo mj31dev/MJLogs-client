@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -30,9 +31,15 @@ data class UiMessage(
 /**
  * The application wide fallback notice: a composable bar in the window itself, deliberately not a
  * native modal, so it never steals focus from what the user is doing.
+ *
+ * It floats over the workspace rather than sitting in the column with it. A notice that takes part
+ * in the layout resizes everything below it the instant it appears and again when it goes, and the
+ * two panes it shifts are the ones the user is reading — so a message about something that just
+ * happened would move the very thing it is describing. Hence the shadow: it has to read as being
+ * above the content, not spliced into it.
  */
 @Composable
-fun MessageBar(message: UiMessage, onDismiss: () -> Unit) {
+fun MessageBar(message: UiMessage, onDismiss: () -> Unit, modifier: Modifier = Modifier) {
     val background = if (message.isError) {
         MaterialTheme.colorScheme.errorContainer
     } else {
@@ -44,19 +51,24 @@ fun MessageBar(message: UiMessage, onDismiss: () -> Unit) {
         MaterialTheme.colorScheme.onSurface
     }
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(color = background)
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = background,
+        shadowElevation = ELEVATION.dp,
     ) {
-        Text(
-            text = message.text.resolve(),
-            style = MaterialTheme.typography.bodySmall,
-            color = foreground,
-            modifier = Modifier.weight(weight = 1f),
-        )
-        TextButton(onClick = onDismiss) { Text(text = stringResource(resource = Res.string.message_dismiss)) }
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = message.text.resolve(),
+                style = MaterialTheme.typography.bodySmall,
+                color = foreground,
+                modifier = Modifier.weight(weight = 1f),
+            )
+            TextButton(onClick = onDismiss) { Text(text = stringResource(resource = Res.string.message_dismiss)) }
+        }
     }
 }
+
+private const val ELEVATION = 6

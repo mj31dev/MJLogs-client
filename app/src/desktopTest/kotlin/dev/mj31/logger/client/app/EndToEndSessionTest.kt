@@ -21,12 +21,14 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import java.io.File
 import kotlin.test.Test
-import dev.mj31.logger.client.app.usecase.sync.SynchronizeTimelinesUseCase
+import dev.mj31.logger.client.app.usecase.sync.manual.SynchronizeTimelinesUseCase
 import dev.mj31.logger.client.app.usecase.timeline.ResolveTimelineOverlapUseCase
 import dev.mj31.logger.client.app.usecase.timeline.MapVideoPositionToLogTimeUseCase
 import dev.mj31.logger.client.app.usecase.timeline.MapLogTimeToVideoPositionUseCase
 import dev.mj31.logger.client.app.usecase.timeline.FindEntryAtVideoPositionUseCase
-import dev.mj31.logger.client.app.usecase.sync.ClearSynchronizationUseCase
+import dev.mj31.logger.client.app.fake.video.fakeAutoSynchronize
+import dev.mj31.logger.client.app.usecase.playback.StepVideoPositionUseCase
+import dev.mj31.logger.client.app.usecase.sync.manual.ClearSynchronizationUseCase
 import dev.mj31.logger.client.app.usecase.session.MergeLogSourcesUseCase
 import dev.mj31.logger.client.app.usecase.session.FilterLogEntriesUseCase
 import dev.mj31.logger.client.app.usecase.ingest.source.LogSourceLoader
@@ -39,9 +41,9 @@ import dev.mj31.logger.client.data.format.line.TemplateLogFormatCompiler
 import dev.mj31.logger.client.data.format.parse.RegexLogLineParserFactory
 import dev.mj31.logger.client.data.format.detect.HeuristicLogFormatDetector
 import dev.mj31.logger.client.app.features.logplayer.state.LogPlayerStateAssembler
-import dev.mj31.logger.client.app.usecase.sync.ParseFrameTimeUseCase
-import dev.mj31.logger.client.app.usecase.sync.SynchronizeAtTimestampUseCase
-import dev.mj31.logger.client.app.usecase.sync.ComposeFrameTimeUseCase
+import dev.mj31.logger.client.app.usecase.sync.manual.ParseFrameTimeUseCase
+import dev.mj31.logger.client.app.usecase.sync.manual.SynchronizeAtTimestampUseCase
+import dev.mj31.logger.client.app.usecase.sync.manual.ComposeFrameTimeUseCase
 
 /**
  * Full vertical slice: real files, real format detection, real parsing and merging, real use cases,
@@ -228,6 +230,8 @@ class EndToEndSessionTest {
                 synchronizeAtTimestamp = SynchronizeAtTimestampUseCase(syncRepository = syncRepository),
                 parseFrameTime = parseFrameTime,
                 composeFrameTime = ComposeFrameTimeUseCase(parseFrameTime = parseFrameTime),
+                autoSynchronize = fakeAutoSynchronize(syncRepository = syncRepository),
+                stepVideoPosition = StepVideoPositionUseCase(),
                 clearSynchronization = ClearSynchronizationUseCase(syncRepository = syncRepository),
                 mapVideoPositionToLogTime = MapVideoPositionToLogTimeUseCase(),
                 mapLogTimeToVideoPosition = MapLogTimeToVideoPositionUseCase(),
@@ -245,6 +249,7 @@ class EndToEndSessionTest {
             ),
             scope = CoroutineScope(context = testScope.backgroundScope.coroutineContext + dispatcher),
             defaultDispatcher = dispatcher,
+            screenClockDispatcher = dispatcher,
         )
     }
 

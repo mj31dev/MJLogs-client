@@ -65,9 +65,18 @@ through a `Channel`, never stored in the state, where a recomposition would repl
 assert with Google Truth: `assertThat(actual).isEqualTo(expected)`. Every change ships with tests;
 the order in which they are written is free. Never delete or comment out a failing assertion.
 
-**Legal texts are load-bearing.** `app/legal/` (`LGPL-3.0.txt`, `GPL-3.0.txt`, `THIRD-PARTY.txt`) is
-wired into packaging through `appResourcesRootDir` and read at runtime by the About window. FFmpeg
-is LGPL and must stay dynamically linked. Do not remove or bypass that configuration.
+**Legal texts are load-bearing.** `app/appResources/common/` (`LGPL-3.0.txt`, `GPL-3.0.txt`,
+`THIRD-PARTY.txt`) is wired into packaging through `appResourcesRootDir` and read at runtime by the
+About window. FFmpeg is LGPL and must stay dynamically linked. Do not remove or bypass that
+configuration. The same folder carries `tessdata/eng.traineddata`, the model the automatic
+synchronization reads the on-screen clock with; only the `*.txt` files are staged into the disk
+image's `Licenses` folder, so a binary never lands among the notices.
+
+**Synchronization has three producers, one product.** Pinning a selected record, typing the time a
+frame shows, and finding it automatically all end in a single `SyncAnchor`, which carries its own
+`origin` and `accuracyMillis`. Manual use cases live in `app/usecase/sync/manual/`, automatic ones in
+`app/usecase/sync/auto/{metadata,screen,zone}/`. Nothing downstream of the anchor knows or cares
+which produced it.
 
 ## Agents, skills, commands
 

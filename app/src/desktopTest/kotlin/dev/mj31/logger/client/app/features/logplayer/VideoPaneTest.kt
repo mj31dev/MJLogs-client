@@ -12,7 +12,9 @@ import com.google.common.truth.Truth.assertThat
 import dev.mj31.logger.client.app.features.logplayer.LogPlayerIntent
 import dev.mj31.logger.client.domain.player.PlaybackStatus
 import dev.mj31.logger.client.domain.player.VideoFrame
+import dev.mj31.logger.client.domain.player.VideoStep
 import kotlin.test.Test
+import dev.mj31.logger.client.app.features.logplayer.state.ui.AutoSyncUiState
 import dev.mj31.logger.client.app.features.logplayer.state.ui.VideoUiState
 import dev.mj31.logger.client.app.features.logplayer.screen.VideoPane
 
@@ -95,6 +97,40 @@ class VideoPaneTest {
         assertThat(intents).containsExactly(LogPlayerIntent.RequestVideoImport)
     }
 
+    /**
+     * The four exact nudges, which are what a slider cannot give: on a recording of any length a
+     * pixel of the slider is worth several frames, and settling which of two frames a log line
+     * belongs to is the question the whole workspace exists to answer.
+     */
+    @Test
+    fun `the playhead can be nudged by a frame and by a second in both directions`() {
+        val intents = mutableListOf<LogPlayerIntent>()
+
+        runComposeUiTest {
+            setContent { pane(video = loaded(), onIntent = { intents += it }) }
+
+            onNodeWithText(text = "− 1s").performClick()
+            onNodeWithText(text = "− 1 frame").performClick()
+            onNodeWithText(text = "+ 1 frame").performClick()
+            onNodeWithText(text = "+ 1s").performClick()
+        }
+
+        assertThat(intents).containsExactly(
+            LogPlayerIntent.StepVideo(step = VideoStep.SECOND, steps = -1),
+            LogPlayerIntent.StepVideo(step = VideoStep.FRAME, steps = -1),
+            LogPlayerIntent.StepVideo(step = VideoStep.FRAME, steps = 1),
+            LogPlayerIntent.StepVideo(step = VideoStep.SECOND, steps = 1),
+        ).inOrder()
+    }
+
+    @Test
+    fun `nothing can be nudged until a screencast is loaded`() = runComposeUiTest {
+        setContent { pane(video = VideoUiState(), onIntent = {}) }
+
+        onNodeWithText(text = "+ 1 frame").assertIsNotEnabled()
+        onNodeWithText(text = "− 1s").assertIsNotEnabled()
+    }
+
     private fun loaded(
         status: PlaybackStatus = PlaybackStatus.PAUSED,
         positionMillis: Long = 0L,
@@ -111,6 +147,7 @@ class VideoPaneTest {
         VideoPane(
             video = video,
             frame = mutableStateOf<VideoFrame?>(value = null),
+            autoSync = AutoSyncUiState(),
             onIntent = onIntent,
         )
     }

@@ -13,6 +13,7 @@ import com.google.common.truth.Truth.assertThat
 import dev.mj31.logger.client.app.features.logplayer.LogPlayerIntent
 import dev.mj31.logger.client.app.fake.LogPlayerFixtures
 import dev.mj31.logger.client.domain.sync.SyncAnchor
+import dev.mj31.logger.client.domain.sync.SyncOrigin
 import kotlin.test.Test
 import dev.mj31.logger.client.app.usecase.timeline.ResolveTimelineOverlapUseCase
 import dev.mj31.logger.client.domain.model.time.TimeRange
@@ -74,12 +75,14 @@ class SyncBarTest {
         val anchor = SyncAnchor(
             logTimestamp = LogPlayerFixtures.at(offsetMillis = 0L),
             videoPositionMillis = 0L,
+            origin = SyncOrigin.SELECTED_ENTRY,
             logEntryId = "e1",
         )
         val state = loadedState().copy(
             video = VideoUiState(name = "clip.mp4", positionMillis = 5_000L, durationMillis = 60_000L),
             sync = SyncUiState(
                 isSynced = true,
+                origin = SyncOrigin.SELECTED_ENTRY,
                 logTimeAtPlayhead = LogPlayerFixtures.at(offsetMillis = 5_000L),
                 overlap = ResolveTimelineOverlapUseCase()(
                     logRange = TimeRange(
@@ -94,8 +97,10 @@ class SyncBarTest {
 
         setContent { SyncBar(state = state, onIntent = {}) }
 
-        onNodeWithText(text = "video 0:05.0 = log 10:00:05.000  |  logs covered 10:00:00.000 .. 10:00:10.000")
-            .assertIsDisplayed()
+        onNodeWithText(
+            text = "video 0:05.0 = log 10:00:05.000  |  logs covered 10:00:00.000 .. 10:00:10.000" +
+                "  |  by the selected record",
+        ).assertIsDisplayed()
     }
 
     @Test

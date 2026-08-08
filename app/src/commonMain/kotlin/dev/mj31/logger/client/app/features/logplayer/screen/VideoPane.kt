@@ -3,6 +3,7 @@ package dev.mj31.logger.client.app.features.logplayer.screen
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -33,9 +35,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.mj31.logger.client.app.features.logplayer.LogPlayerIntent
 import dev.mj31.logger.client.domain.player.VideoFrame
+import dev.mj31.logger.client.domain.player.VideoStep
 import dev.mj31.logger.client.app.view.toImageBitmap
 import dev.mj31.logger.client.app.view.format.formatVideoPosition
+import dev.mj31.logger.client.app.features.logplayer.state.ui.AutoSyncUiState
 import dev.mj31.logger.client.app.features.logplayer.state.ui.VideoUiState
+import dev.mj31.logger.client.app.features.logplayer.sync.ClockRegionOverlay
 import dev.mj31.logger.client.app.resources.Res
 import dev.mj31.logger.client.app.resources.video_decoding
 import dev.mj31.logger.client.app.resources.video_decoding_description
@@ -48,7 +53,12 @@ import dev.mj31.logger.client.app.resources.video_pause
 import dev.mj31.logger.client.app.resources.video_play
 import dev.mj31.logger.client.app.resources.video_playback_unavailable
 import dev.mj31.logger.client.app.resources.video_replace
+import dev.mj31.logger.client.app.resources.video_step_frame_back
+import dev.mj31.logger.client.app.resources.video_step_frame_forward
+import dev.mj31.logger.client.app.resources.video_step_second_back
+import dev.mj31.logger.client.app.resources.video_step_second_forward
 import dev.mj31.logger.client.app.resources.video_title
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -61,6 +71,7 @@ import org.jetbrains.compose.resources.stringResource
 fun VideoPane(
     video: VideoUiState,
     frame: State<VideoFrame?>,
+    autoSync: AutoSyncUiState,
     onIntent: (LogPlayerIntent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -83,6 +94,13 @@ fun VideoPane(
             contentAlignment = Alignment.Center,
         ) {
             VideoSurface(video = video, frame = frame, onOpenVideoClick = onOpenVideoClick)
+
+            ClockRegionOverlay(
+                autoSync = autoSync,
+                frameWidth = frame.value?.width ?: 0,
+                frameHeight = frame.value?.height ?: 0,
+                onIntent = onIntent,
+            )
         }
 
         Spacer(modifier = Modifier.height(height = 8.dp))
@@ -92,6 +110,10 @@ fun VideoPane(
             onPlayPause = { onIntent(LogPlayerIntent.TogglePlayback) },
             onSeek = { position -> onIntent(LogPlayerIntent.Seek(positionMillis = position)) },
         )
+
+        Spacer(modifier = Modifier.height(height = 4.dp))
+
+        StepControls(video = video, onIntent = onIntent)
     }
 }
 
@@ -193,6 +215,51 @@ private fun VideoPlaceholder(
             Spacer(modifier = Modifier.height(height = 14.dp))
             Button(onClick = onAction) { Text(text = actionLabel) }
         }
+    }
+}
+
+/**
+ * The playhead moved by exact amounts rather than dragged.
+ *
+ * A slider cannot answer the question this application exists for — which of two frames a log line
+ * belongs to — because a pixel of it is worth several frames on any recording longer than a minute.
+ * A second is the step for finding roughly the right place; a frame is the step for settling what
+ * happened first.
+ */
+@Composable
+private fun StepControls(video: VideoUiState, onIntent: (LogPlayerIntent) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(space = 6.dp, alignment = Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        StepButton(label = Res.string.video_step_second_back, video = video) {
+            onIntent(LogPlayerIntent.StepVideo(step = VideoStep.SECOND, steps = -1))
+        }
+        StepButton(label = Res.string.video_step_frame_back, video = video) {
+            onIntent(LogPlayerIntent.StepVideo(step = VideoStep.FRAME, steps = -1))
+        }
+        StepButton(label = Res.string.video_step_frame_forward, video = video) {
+            onIntent(LogPlayerIntent.StepVideo(step = VideoStep.FRAME, steps = 1))
+        }
+        StepButton(label = Res.string.video_step_second_forward, video = video) {
+            onIntent(LogPlayerIntent.StepVideo(step = VideoStep.SECOND, steps = 1))
+        }
+    }
+}
+
+@Composable
+private fun StepButton(label: StringResource, video: VideoUiState, onClick: () -> Unit) {
+    OutlinedButton(
+        onClick = onClick,
+        enabled = video.hasVideo,
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+    ) {
+        Text(
+            text = stringResource(resource = label),
+            style = MaterialTheme.typography.bodySmall,
+            fontFamily = FontFamily.Monospace,
+        )
     }
 }
 

@@ -49,6 +49,18 @@ fun formatLogDateTime(instant: Instant, timeZone: TimeZone = TimeZone.UTC): Stri
         formatLogTime(instant = instant, timeZone = timeZone)
 }
 
+/**
+ * Formats how far an anchor may be off, in the unit that makes it legible.
+ *
+ * Sub-second uncertainty is what separates an anchor that lands on the right frame from one that
+ * lands on the right second, and printing it as `0.2s` rather than `200ms` would hide the very
+ * distinction the automatic synchronization exists to make.
+ */
+fun formatAccuracy(millis: Long): String {
+    val safe = millis.coerceAtLeast(minimumValue = 0L)
+    return if (safe < MILLIS_PER_SECOND) "${safe}ms" else "${safe / MILLIS_PER_SECOND}s"
+}
+
 private fun Int.pad(length: Int): String = toString().padStart(length = length, padChar = '0')
 
 private fun Long.pad(length: Int): String = toString().padStart(length = length, padChar = '0')

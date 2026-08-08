@@ -71,10 +71,24 @@ class LogPlayerStore(
     private val stateAssembler: LogPlayerStateAssembler,
     private val scope: CoroutineScope,
     private val defaultDispatcher: CoroutineDispatcher,
+    private val screenClockDispatcher: CoroutineDispatcher,
 ) {
 
     private val local = MutableStateFlow(value = LogPlayerLocalState())
     private val effectChannel = Channel<LogPlayerEffect>(capacity = Channel.BUFFERED)
+
+    /** Everything that looks for an anchor instead of being handed one. */
+    private val autoSync = AutoSyncHandler(
+        local = local,
+        autoSynchronize = useCases.autoSynchronize,
+        scope = scope,
+        dispatcher = screenClockDispatcher,
+        emit = ::emit,
+        seekTo = player::seekTo,
+    )
+
+    /** The screencast the automatic attempt has already been spent on, so it happens once per file. */
+    private var autoSyncedPath: String? = null
 
     /**
      * Filter actually applied to the session: the user criteria plus, when a time window is active
@@ -143,6 +157,28 @@ class LogPlayerStore(
     /** Decoded frames are exposed separately so that a redraw does not recompose the log list. */
     val frames: StateFlow<VideoFrame?> = player.frames
 
+    /**
+     * Tries to synchronize by itself the first time a screencast and a session are both loaded.
+     *
+     * A user who has opened both has already stated the intent; asking them to press a button for
+     * something the files can answer between them would be asking for a formality. It happens once
+     * per screencast, and never over an anchor that already exists — including one placed by hand.
+     */
+    init {
+        scope.launch {
+            combine(repositories.video.media, session) { media, loaded -> media to loaded }
+                .collect { (media, loaded) ->
+                    val path = media?.path
+                    if (path != null && !loaded.isEmpty && path != autoSyncedPath &&
+                        !repositories.sync.syncState.value.isSynced
+                    ) {
+                        autoSyncedPath = path
+                        autoSync.automatic(media = media, session = loaded)
+                    }
+                }
+        }
+    }
+
     /** The single entry point of the cycle: everything the user does arrives here. */
     fun handleIntent(intent: LogPlayerIntent) {
         when (intent) {
@@ -166,6 +202,13 @@ class LogPlayerStore(
             is LogPlayerIntent.SelectEntry -> selectEntry(entryId = intent.entryId)
             LogPlayerIntent.TogglePlayback -> togglePlayback()
             is LogPlayerIntent.Seek -> player.seekTo(positionMillis = intent.positionMillis)
+            is LogPlayerIntent.StepVideo -> player.seekTo(
+                positionMillis = useCases.stepVideoPosition(
+                    playback = player.state.value,
+                    step = intent.step,
+                    steps = intent.steps,
+                ),
+            )
             LogPlayerIntent.Synchronize -> synchronize()
             is LogPlayerIntent.UpdateFrameTime -> local.update {
                 it.copy(frameTime = intent.text, frameTimeError = false)
@@ -184,6 +227,20 @@ class LogPlayerStore(
             LogPlayerIntent.SynchronizeAtFrameTime -> synchronizeAtFrameTime()
             LogPlayerIntent.ClearSynchronization -> scope.launch { useCases.clearSynchronization() }
             is LogPlayerIntent.SetFollowVideo -> local.update { it.copy(followVideo = intent.enabled) }
+            LogPlayerIntent.SynchronizeAutomatically -> repositories.video.media.value?.let { media ->
+                autoSync.automatic(media = media, session = session.value)
+            }
+
+            LogPlayerIntent.RefineWithScreenClock -> repositories.video.media.value?.let { media ->
+                autoSync.refine(media = media, session = session.value, region = local.value.clockRegion)
+            }
+
+            LogPlayerIntent.RequestClockRegion -> local.update { it.copy(isSelectingClockRegion = true) }
+            is LogPlayerIntent.SetClockRegion -> repositories.video.media.value?.let { media ->
+                autoSync.applyRegion(media = media, session = session.value, drawn = intent)
+            }
+            LogPlayerIntent.CancelClockRegion -> local.update { it.copy(isSelectingClockRegion = false) }
+            LogPlayerIntent.CancelAutoSync -> autoSync.cancel()
         }
     }
 
@@ -234,11 +291,16 @@ class LogPlayerStore(
             )
             return
         }
+        // A new recording invalidates everything said about the old one: the anchor pointed into a
+        // file that is no longer loaded, and the clock of another device sits somewhere else.
         scope.launch {
+            autoSync.forget()
+            useCases.clearSynchronization()
             repositories.video.setMedia(media = media)
             player.open(media = media)
         }
     }
+
 
     private fun updateFormatDraft(draft: ManualFormatInput) {
         val request = local.value.formatRequests.firstOrNull() ?: return
@@ -380,7 +442,6 @@ class LogPlayerStore(
             )
         }
     }
-
     private suspend fun handleImportResult(result: LogImportResult) {
         when (result) {
             is LogImportResult.Success -> {
@@ -465,3 +526,4 @@ private fun importedMessage(source: LogSource): UiText = UiText.Resource(
     resource = Res.string.message_import_success,
     arguments = listOf(source.name, source.entryCount, source.format.name),
 )
+

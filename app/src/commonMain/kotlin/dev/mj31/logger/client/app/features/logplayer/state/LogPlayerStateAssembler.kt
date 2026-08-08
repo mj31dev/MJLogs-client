@@ -5,11 +5,14 @@ import dev.mj31.logger.client.app.usecase.timeline.MapVideoPositionToLogTimeUseC
 import dev.mj31.logger.client.app.usecase.timeline.ResolveTimelineOverlapUseCase
 import dev.mj31.logger.client.domain.model.log.LogEntry
 import dev.mj31.logger.client.domain.model.log.LogSession
+import dev.mj31.logger.client.domain.sync.SyncAnchor
+import dev.mj31.logger.client.domain.sync.SyncOrigin
 import dev.mj31.logger.client.domain.sync.SyncState
+import dev.mj31.logger.client.app.features.logplayer.state.ui.AutoSyncUiState
 import dev.mj31.logger.client.app.features.logplayer.state.ui.LogSourceUi
 import dev.mj31.logger.client.app.features.logplayer.state.ui.VideoUiState
 import dev.mj31.logger.client.app.features.logplayer.state.ui.SyncUiState
-import dev.mj31.logger.client.app.usecase.sync.ParseFrameTimeUseCase
+import dev.mj31.logger.client.app.usecase.sync.manual.ParseFrameTimeUseCase
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -52,16 +55,7 @@ class LogPlayerStateAssembler(
         )
 
         return LogPlayerState(
-            sources = session.sources.map { source ->
-                LogSourceUi(
-                    id = source.id,
-                    name = source.name,
-                    formatName = source.format.name,
-                    entryCount = source.entryCount,
-                    skippedLineCount = source.skippedLineCount,
-                    isSelected = local.filter.sourceIds.isEmpty() || source.id in local.filter.sourceIds,
-                )
-            },
+            sources = sourcesOf(session = session, local = local),
             entries = visibleEntries,
             totalEntryCount = session.entries.size,
             filter = local.filter,
@@ -72,6 +66,8 @@ class LogPlayerStateAssembler(
             video = videoState,
             sync = SyncUiState(
                 isSynced = syncState.isSynced,
+                origin = anchor?.origin,
+                accuracyMillis = anchor?.accuracyMillis ?: 0L,
                 anchorEntryId = anchor?.logEntryId,
                 anchorVideoPositionMillis = anchor?.videoPositionMillis ?: 0L,
                 logTimeAtPlayhead = anchor?.let {
@@ -88,10 +84,43 @@ class LogPlayerStateAssembler(
                 canSynchronizeAtFrameTime = local.frameTime.isNotBlank() && videoState.hasVideo,
                 frameTimeDefault = frameTimeDefaultOf(session = session, local = local),
             ),
+            autoSync = autoSyncStateOf(session = session, video = videoState, anchor = anchor, local = local),
             formatRequest = local.formatRequests.firstOrNull(),
             isImporting = local.isImporting,
         )
     }
+
+    /** An empty selection means every file is shown, which is not the same as none being chosen. */
+    private fun sourcesOf(session: LogSession, local: LogPlayerLocalState): List<LogSourceUi> =
+        session.sources.map { source ->
+            LogSourceUi(
+                id = source.id,
+                name = source.name,
+                formatName = source.format.name,
+                entryCount = source.entryCount,
+                skippedLineCount = source.skippedLineCount,
+                isSelected = local.filter.sourceIds.isEmpty() || source.id in local.filter.sourceIds,
+            )
+        }
+
+    /**
+     * Refining is offered only against an anchor that has room to improve.
+     *
+     * A creation time locates the recording to about a second; the frame a clock changed minute
+     * locates it to a frame. Offering to sharpen an anchor a human placed, or one already read off
+     * the screen, would be offering to redo work that is already exact.
+     */
+    private fun autoSyncStateOf(
+        session: LogSession,
+        video: VideoUiState,
+        anchor: SyncAnchor?,
+        local: LogPlayerLocalState,
+    ): AutoSyncUiState = AutoSyncUiState(
+        isScanning = local.isScanningClock,
+        canRun = video.hasVideo && !session.isEmpty && !local.isScanningClock,
+        canRefine = video.hasVideo && !local.isScanningClock && anchor?.origin == SyncOrigin.VIDEO_METADATA,
+        isSelectingRegion = local.isSelectingClockRegion,
+    )
 
     /**
      * Moment the date and time picker opens on: what the field already says when it can be read,

@@ -3,6 +3,7 @@ package dev.mj31.logger.client.app.usecase.timeline
 import com.google.common.truth.Truth.assertThat
 import dev.mj31.logger.client.app.fake.log.TestLogEntries
 import dev.mj31.logger.client.domain.sync.SyncAnchor
+import dev.mj31.logger.client.domain.sync.SyncOrigin
 import kotlin.test.Test
 import dev.mj31.logger.client.domain.model.time.TimeRange
 
@@ -17,7 +18,11 @@ class ResolveTimelineOverlapUseCaseTest {
 
     /** Anchor whose video starts exactly [offsetMillis] after the session origin. */
     private fun anchorStartingAt(offsetMillis: Long): SyncAnchor =
-        SyncAnchor(logTimestamp = TestLogEntries.at(offsetMillis = offsetMillis), videoPositionMillis = 0L)
+        SyncAnchor(
+            logTimestamp = TestLogEntries.at(offsetMillis = offsetMillis),
+            videoPositionMillis = 0L,
+            origin = SyncOrigin.SELECTED_ENTRY,
+        )
 
     @Test
     fun `a video covering the whole log yields the log range as overlap`() {

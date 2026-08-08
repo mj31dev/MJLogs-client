@@ -15,6 +15,7 @@ import dev.mj31.logger.client.domain.player.VideoFrame
 import kotlin.test.Test
 import dev.mj31.logger.client.app.view.UiMessage
 import dev.mj31.logger.client.app.features.logplayer.screen.PlayerScreen
+import dev.mj31.logger.client.app.features.logplayer.state.LogPlayerState
 import dev.mj31.logger.client.app.view.text.UiText
 
 @OptIn(ExperimentalTestApi::class)
@@ -114,5 +115,60 @@ class PlayerScreenTest {
 
         onNodeWithText(text = "Describe the format of analytics.txt").assertIsDisplayed()
         onNodeWithText(text = "Apply").assertIsDisplayed()
+    }
+
+    /**
+     * A notice must not move the workspace it is describing.
+     *
+     * Sharing the column with the panes meant every message resized them as it appeared and again as
+     * it went — so a message about a record would shift the record out from under the pointer, and a
+     * message that arrived while the user was reaching for the play button moved the button. It
+     * floats over them instead, and the proof is that nothing below it changes position.
+     */
+    @Test
+    fun `a transient notice leaves the layout where it was`() {
+        val quiet = syncBarTop(message = null)
+        val noticed = syncBarTop(
+            message = UiMessage(text = UiText.Raw(value = "Something worth saying"), isError = true),
+        )
+
+        assertThat(noticed).isEqualTo(quiet)
+    }
+
+    /**
+     * The complaint under the frame time field is transient in exactly the same way, and it used to
+     * be part of the bar's own height: it appeared as the user typed something unreadable and pushed
+     * the workspace up, then let it fall back on the next keystroke.
+     */
+    @Test
+    fun `an invalid frame time leaves the layout where it was`() {
+        val valid = syncBarTop(message = null)
+        val invalid = syncBarTop(
+            message = null,
+            state = loadedState().copy(
+                sync = loadedState().sync.copy(frameTime = "not a time", frameTimeError = true),
+            ),
+        )
+
+        assertThat(invalid).isEqualTo(valid)
+    }
+
+    /** Top edge of the synchronization bar, which is what anything in the column would have pushed. */
+    private fun syncBarTop(message: UiMessage?, state: LogPlayerState = loadedState()): Float {
+        var top = 0f
+        runComposeUiTest {
+            setContent {
+                PlayerScreen(
+                    state = state,
+                    frame = mutableStateOf<VideoFrame?>(value = null),
+                    message = message,
+                    onIntent = {},
+                    onDismissMessage = {},
+                )
+            }
+
+            top = onNodeWithText(text = "Timelines independent").fetchSemanticsNode().boundsInRoot.top
+        }
+        return top
     }
 }

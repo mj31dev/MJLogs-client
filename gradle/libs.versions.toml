@@ -9,6 +9,8 @@ truth = "1.4.4"
 javacv = "1.5.13"
 javacpp = "1.5.13"
 ffmpeg = "8.0.1-1.5.13"
+tesseract = "5.5.2-1.5.13"
+leptonica = "1.87.0-1.5.13"
 ksp = "2.0.20-1.0.25"
 kotlin-inject = "0.7.2"
 
@@ -23,6 +25,8 @@ detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", 
 javacv = { module = "org.bytedeco:javacv", version.ref = "javacv" }
 ffmpeg = { module = "org.bytedeco:ffmpeg", version.ref = "ffmpeg" }
 javacpp = { module = "org.bytedeco:javacpp", version.ref = "javacpp" }
+tesseract = { module = "org.bytedeco:tesseract", version.ref = "tesseract" }
+leptonica = { module = "org.bytedeco:leptonica", version.ref = "leptonica" }
 kotlin-inject-runtime = { module = "me.tatarka.inject:kotlin-inject-runtime-kmp", version.ref = "kotlin-inject" }
 kotlin-inject-compiler = { module = "me.tatarka.inject:kotlin-inject-compiler-ksp", version.ref = "kotlin-inject" }
 

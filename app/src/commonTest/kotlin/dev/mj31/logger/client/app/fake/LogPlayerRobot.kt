@@ -18,12 +18,14 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.datetime.TimeZone
-import dev.mj31.logger.client.app.usecase.sync.SynchronizeTimelinesUseCase
+import dev.mj31.logger.client.app.usecase.sync.manual.SynchronizeTimelinesUseCase
 import dev.mj31.logger.client.app.usecase.timeline.ResolveTimelineOverlapUseCase
 import dev.mj31.logger.client.app.usecase.timeline.MapVideoPositionToLogTimeUseCase
 import dev.mj31.logger.client.app.usecase.timeline.MapLogTimeToVideoPositionUseCase
 import dev.mj31.logger.client.app.usecase.timeline.FindEntryAtVideoPositionUseCase
-import dev.mj31.logger.client.app.usecase.sync.ClearSynchronizationUseCase
+import dev.mj31.logger.client.app.fake.video.fakeAutoSynchronize
+import dev.mj31.logger.client.app.usecase.playback.StepVideoPositionUseCase
+import dev.mj31.logger.client.app.usecase.sync.manual.ClearSynchronizationUseCase
 import dev.mj31.logger.client.app.usecase.session.FilterLogEntriesUseCase
 import dev.mj31.logger.client.app.usecase.ingest.source.LogSourceLoader
 import dev.mj31.logger.client.app.usecase.ingest.source.LogSourceAssembler
@@ -40,9 +42,9 @@ import dev.mj31.logger.client.app.fake.source.FixedIdGenerator
 import dev.mj31.logger.client.app.fake.source.FixedClock
 import dev.mj31.logger.client.app.fake.source.FakeTextFileDataSource
 import dev.mj31.logger.client.app.fake.format.FakeLogFormatCompiler
-import dev.mj31.logger.client.app.usecase.sync.ParseFrameTimeUseCase
-import dev.mj31.logger.client.app.usecase.sync.SynchronizeAtTimestampUseCase
-import dev.mj31.logger.client.app.usecase.sync.ComposeFrameTimeUseCase
+import dev.mj31.logger.client.app.usecase.sync.manual.ParseFrameTimeUseCase
+import dev.mj31.logger.client.app.usecase.sync.manual.SynchronizeAtTimestampUseCase
+import dev.mj31.logger.client.app.usecase.sync.manual.ComposeFrameTimeUseCase
 
 /**
  * Assembles a [LogPlayerStore] with the real in-memory repositories and the real use cases,
@@ -260,6 +262,8 @@ class LogPlayerRobot private constructor(
                 synchronizeAtTimestamp = SynchronizeAtTimestampUseCase(syncRepository = repositories.sync),
                 parseFrameTime = parseFrameTime,
                 composeFrameTime = ComposeFrameTimeUseCase(parseFrameTime = parseFrameTime),
+                autoSynchronize = fakeAutoSynchronize(syncRepository = repositories.sync),
+                stepVideoPosition = StepVideoPositionUseCase(),
                 clearSynchronization = ClearSynchronizationUseCase(syncRepository = repositories.sync),
                 mapVideoPositionToLogTime = MapVideoPositionToLogTimeUseCase(),
                 mapLogTimeToVideoPosition = MapLogTimeToVideoPositionUseCase(),
@@ -274,6 +278,7 @@ class LogPlayerRobot private constructor(
             ),
             scope = scope,
             defaultDispatcher = dispatcher,
+            screenClockDispatcher = dispatcher,
         )
         }
 

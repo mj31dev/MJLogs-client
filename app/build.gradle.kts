@@ -112,8 +112,16 @@ fun installerVersion(version: String): String = version.substringBefore(delimite
 /** Name shared by the application bundle and by the installer artefact. */
 val appPackageName = "MJLogs"
 
-/** The licence texts every binary distribution has to carry. Also read at runtime by the app. */
-val legalDirectory: Directory = layout.projectDirectory.dir("legal")
+/**
+ * Everything the application needs beside its own code at runtime, staged by jpackage into
+ * `app/resources` and pointed at by `compose.application.resources.dir`.
+ *
+ * `common/` holds the licence texts every binary distribution has to carry, and `common/tessdata/`
+ * the recognition model that reads the clock off a screencast. The two live under one root because
+ * jpackage takes exactly one, and the root is named after that job rather than after either of its
+ * tenants — it was called `legal` while the notices were the only thing in it.
+ */
+val appResourcesDirectory: Directory = layout.projectDirectory.dir("appResources")
 
 /** Folder the disk image shows next to the application, so the notices need no bundle spelunking. */
 val dmgLegalFolderName = "Licenses"
@@ -124,13 +132,17 @@ val isMacOsHost: Boolean = System.getProperty("os.name").lowercase().contains("m
 /**
  * Stages the notices under the name the disk image should show.
  *
- * jpackage names the entry after the path it is given, so the folder cannot simply be `legal/common`.
+ * jpackage names the entry after the path it is given, so the folder cannot simply be
+ * `appResources/common`.
+ *
+ * Only the texts are taken. The same folder also carries the recognition model, and a multi-megabyte
+ * binary sitting in a folder labelled `Licenses` would be a puzzle rather than a notice.
  */
 val stageDmgLegalNotices = tasks.register<Sync>("stageDmgLegalNotices") {
     description = "Collects the licence texts that the disk image shows next to the application."
     group = "distribution"
 
-    from(legalDirectory.dir("common"))
+    from(appResourcesDirectory.dir("common")) { include("*.txt") }
     into(layout.buildDirectory.dir("legal/$dmgLegalFolderName"))
 }
 
@@ -200,9 +212,10 @@ compose.desktop {
             // cannot decode a single frame.
             modules("jdk.unsupported")
 
-            // LGPL requires the licence to travel with the binaries it covers. These end up under
-            // `app/resources` inside the installed application and are read back by the Help menu.
-            appResourcesRootDir.set(legalDirectory)
+            // LGPL requires the licence to travel with the binaries it covers. The contents of
+            // `common/` end up under `app/resources` inside the installed application: the texts are
+            // read back by the Help menu, the model by the automatic synchronization.
+            appResourcesRootDir.set(appResourcesDirectory)
 
             // The licence the MSI and DEB installers show and record for the product itself.
             //
@@ -211,7 +224,7 @@ compose.desktop {
             // grant is not something a user has to accept before copying a file. The macOS copy
             // travels in the visible `Licenses` folder instead.
             if (!isMacOsHost) {
-                licenseFile.set(legalDirectory.file("common/LICENSE.txt"))
+                licenseFile.set(appResourcesDirectory.file("common/LICENSE.txt"))
             }
 
             // The same drawing in the three containers the platforms insist on.
