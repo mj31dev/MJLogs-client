@@ -1,15 +1,20 @@
 #!/bin/bash
-# Pre-commit hook to execute Detekt auto-formatting and static checks on modified Kotlin files.
+#
+# Runs Detekt over the project before a commit is created.
+#
+# `detekt` reformats what its formatting ruleset can fix and fails on what it cannot, so a single
+# invocation is both the formatter and the quality gate. Files it rewrote are staged again, because
+# a reformatted file that stays unstaged would commit the unformatted version.
+set -uo pipefail
 
-# Filter staged Kotlin files (Added, Copied, Modified, Renamed)
 STAGED_KOTLIN_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(kt|kts)$')
 
 if [ -z "$STAGED_KOTLIN_FILES" ]; then
-    echo "ℹ️  No modified Kotlin files detected in staged index. Skipping Detekt formatting."
+    echo "No staged Kotlin files: skipping Detekt."
     exit 0
 fi
 
-echo "🔍 Modified Kotlin files detected:"
+echo "Staged Kotlin files:"
 echo "$STAGED_KOTLIN_FILES" | sed 's/^/  - /'
 
 if [ -f "./gradlew" ]; then
@@ -18,30 +23,18 @@ else
     GRADLE_CMD="gradle"
 fi
 
-echo "✨ Running Detekt auto-formatting on modified files..."
-$GRADLE_CMD detektFormat --daemon
-
-FORMAT_EXIT_CODE=$?
-if [ $FORMAT_EXIT_CODE -ne 0 ]; then
-    echo "❌ Detekt auto-formatting task failed with code $FORMAT_EXIT_CODE."
+echo "Running Detekt…"
+if ! $GRADLE_CMD detekt --daemon; then
+    echo "Detekt failed. Fix the reported violations before committing." >&2
     exit 1
 fi
 
-# Re-stage formatted files that were previously staged
+# Re-stage the files Detekt reformatted; untouched files are simply staged again as they were.
 echo "$STAGED_KOTLIN_FILES" | while IFS= read -r file; do
     if [ -f "$file" ]; then
         git add "$file"
     fi
 done
 
-echo "🛡️  Running Detekt static analysis validation..."
-$GRADLE_CMD detekt --daemon
-
-CHECK_EXIT_CODE=$?
-if [ $CHECK_EXIT_CODE -ne 0 ]; then
-    echo "❌ Detekt static analysis failed. Please fix reported violations before committing."
-    exit 1
-fi
-
-echo "✅ Detekt auto-formatting and quality checks successfully applied to modified files!"
+echo "Detekt passed."
 exit 0

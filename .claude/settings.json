@@ -1,33 +1,32 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "project": {
-    "name": "MJLogs",
-    "language": "kotlin",
-    "package": "dev.mj31.logger.client"
-  },
-  "autoFormat": {
-    "enabled": true,
-    "onSave": true,
-    "onEdit": true,
-    "rules": [
+  "hooks": {
+    "Stop": [
       {
-        "pattern": "**/*.{kt,kts}",
-        "command": "./gradlew detektFormat"
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/detekt-stop.sh"
+          }
+        ]
       }
     ]
   },
-  "hooks": {
-    "preCommit": "./.githooks/pre-commit",
-    "postEdit": "./gradlew detektFormat"
-  },
-  "qualityGates": {
-    "staticAnalysis": "./gradlew detekt",
-    "testSuite": "./gradlew test"
-  },
   "permissions": {
-    "defaultMode": "accept",
+    "defaultMode": "acceptEdits",
     "allow": [
-      "*"
+      "Bash(./gradlew detekt*)",
+      "Bash(./gradlew test*)",
+      "Bash(./gradlew verifySourceLayout*)",
+      "Bash(./gradlew :domain:desktopTest*)",
+      "Bash(./gradlew :data:desktopTest*)",
+      "Bash(./gradlew :app:desktopTest*)",
+      "Bash(./gradlew :app:desktopRun*)",
+      "Bash(./gradlew tasks*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)"
     ],
     "ask": [
       "Bash(*git checkout*)",

@@ -5,6 +5,8 @@ data class PlaybackState(
     val status: PlaybackStatus = PlaybackStatus.IDLE,
     val positionMillis: Long = 0L,
     val durationMillis: Long = 0L,
+    /** What the file says its frame rate is; zero until a file is open and it can be asked. */
+    val frameRateFps: Double = 0.0,
     val errorMessage: String? = null,
 ) {
 

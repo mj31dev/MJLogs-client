@@ -1,6 +1,7 @@
 package dev.mj31.logger.client.app.features.logplayer
 
 import dev.mj31.logger.client.domain.model.log.LogFilter
+import dev.mj31.logger.client.domain.player.VideoStep
 
 /**
  * Every user action the screen can produce.
@@ -44,6 +45,9 @@ sealed interface LogPlayerIntent {
 
     data class Seek(val positionMillis: Long) : LogPlayerIntent
 
+    /** Nudges the playhead by whole frames or whole seconds; negative [steps] move it back. */
+    data class StepVideo(val step: VideoStep, val steps: Int) : LogPlayerIntent
+
     /** Pins the selected record to the current playhead. */
     data object Synchronize : LogPlayerIntent
 
@@ -63,4 +67,29 @@ sealed interface LogPlayerIntent {
     data object ClearSynchronization : LogPlayerIntent
 
     data class SetFollowVideo(val enabled: Boolean) : LogPlayerIntent
+
+    /** Finds the anchor without help: the container's creation time, then the clock on the screen. */
+    data object SynchronizeAutomatically : LogPlayerIntent
+
+    /**
+     * Replaces an anchor good to a second with one good to a frame, by finding the moment the clock
+     * on the screen changed minute.
+     */
+    data object RefineWithScreenClock : LogPlayerIntent
+
+    /** Puts the screen into the mode where the user draws a rectangle around the clock. */
+    data object RequestClockRegion : LogPlayerIntent
+
+    /** The rectangle the user drew, in fractions of the frame. */
+    data class SetClockRegion(
+        val left: Float,
+        val top: Float,
+        val right: Float,
+        val bottom: Float,
+    ) : LogPlayerIntent
+
+    data object CancelClockRegion : LogPlayerIntent
+
+    data object CancelAutoSync : LogPlayerIntent
+
 }

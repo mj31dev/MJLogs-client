@@ -73,6 +73,7 @@ class FFmpegVideoPlayer(
                 status = PlaybackStatus.PAUSED,
                 positionMillis = 0L,
                 durationMillis = opened.lengthInTime.coerceAtLeast(minimumValue = 0L) / MICROS_PER_MILLI,
+                frameRateFps = opened.frameRate.takeIf { it.isFinite() && it > 0.0 } ?: 0.0,
             )
             // Both timelines stay independent until the user synchronizes them, so the screencast
             // waits on its first frame rather than starting to play.

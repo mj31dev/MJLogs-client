@@ -3,6 +3,7 @@ package dev.mj31.logger.client.app.usecase.timeline
 import com.google.common.truth.Truth.assertThat
 import dev.mj31.logger.client.app.fake.log.TestLogEntries
 import dev.mj31.logger.client.domain.sync.SyncAnchor
+import dev.mj31.logger.client.domain.sync.SyncOrigin
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -15,6 +16,7 @@ class TimelineMappingUseCaseTest {
     private val anchor = SyncAnchor(
         logTimestamp = TestLogEntries.at(offsetMillis = 30_000L),
         videoPositionMillis = 30_000L,
+        origin = SyncOrigin.SELECTED_ENTRY,
         logEntryId = "src-1:7",
     )
     private val videoDurationMillis = 120_000L
@@ -121,7 +123,11 @@ class TimelineMappingUseCaseTest {
 
     @Test
     fun `an anchor at position zero maps the log timestamp onto the video start`() {
-        val zeroAnchor = SyncAnchor(logTimestamp = TestLogEntries.BASE, videoPositionMillis = 0L)
+        val zeroAnchor = SyncAnchor(
+            logTimestamp = TestLogEntries.BASE,
+            videoPositionMillis = 0L,
+            origin = SyncOrigin.SELECTED_ENTRY,
+        )
 
         assertThat(zeroAnchor.videoStartInstant).isEqualTo(TestLogEntries.BASE)
         assertThat(mapToLogTime(anchor = zeroAnchor, videoPositionMillis = 2_000L))

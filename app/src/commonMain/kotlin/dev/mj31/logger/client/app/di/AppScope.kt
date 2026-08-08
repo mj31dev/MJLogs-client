@@ -18,3 +18,12 @@ typealias IoDispatcher = CoroutineDispatcher
 
 /** Dispatcher for CPU bound work such as filtering a large session. */
 typealias DefaultDispatcher = CoroutineDispatcher
+
+/**
+ * Dispatcher of width one, on which every recognition runs.
+ *
+ * The recognition handle is a native object that is not thread safe, and neither is the decoder the
+ * frames come from. Confining both to a single thread is what makes them safe to share, exactly as
+ * the player already confines its own grabber.
+ */
+typealias ScreenClockDispatcher = CoroutineDispatcher

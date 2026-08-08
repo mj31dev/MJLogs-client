@@ -48,8 +48,26 @@ auto-detection, logcat viewer for desktop, Kotlin Multiplatform Compose Desktop 
 - If a file's layout cannot be recognized, the app asks for a **timestamp pattern** and a **line
   structure** — pre-filled with the layout **inferred from the sample lines**, and every keystroke
   re-renders those lines **colour coded by component**, so the result is visible before applying it.
+- **Synchronize automatically.** When a screencast and logs are both loaded, MJLogs tries to line
+  them up by itself. First it reads the recording's own creation time — a header read, instantly,
+  accurate to about a second — and checks it against the loaded logs; a file whose clock is an hour
+  out, or that has been through a re-encode, fails that check and is discarded rather than believed.
+  Then it looks at the picture: it finds the clock in the status bar and **bisects for the frame on
+  which it changes minute**, which is the one moment a screen recording states the wall clock time
+  exactly. That anchor is good to a frame, and the sync bar always says where the current anchor came
+  from and how far it may be off. Everything happens on the machine — the recognizer and its model
+  are bundled, and no network is used at any point.
+- **A twelve hour clock is understood.** An iPhone shows `2:39` and prints no `AM` or `PM` anywhere,
+  so the digits alone are two moments half a day apart. The loaded logs decide which: beside a
+  session that ran from `14:38` to `14:39`, `2:39` is the afternoon. A padded hour (`02:39`) comes
+  from a twenty-four hour dial and is taken at face value, because only that dial writes the zero.
+- **What it found is shown, not merely applied.** The playhead moves to the frame the reading came
+  from, and the time read off it lands in the "Time on this frame" field — the same field you would
+  have typed it into yourself. The result is therefore checked against the picture instead of taken
+  on trust, and a digit the recognizer got wrong is fixed by editing it and pressing **Use this
+  time**.
 - The video timeline and the log timeline are **completely independent** until the user synchronizes
-  them. There are two ways to do that:
+  them. Beside the automatic attempt there are two manual ways, unchanged and always available:
   - select a record, position the playhead and press **Synchronize**;
   - or state **the exact time the frame shows** — type it (`18:50:07.267`, with or without a date)
     or press **Pick…** for a calendar and a clock — and press **Use this time**, which also covers a

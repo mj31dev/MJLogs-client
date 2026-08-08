@@ -21,6 +21,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import dev.mj31.logger.client.app.features.logplayer.LogPlayerIntent
 import dev.mj31.logger.client.app.features.logplayer.state.LogPlayerState
+import dev.mj31.logger.client.app.features.logplayer.sync.AutoSyncMenu
+import dev.mj31.logger.client.domain.sync.SyncOrigin
+import dev.mj31.logger.client.app.view.format.formatAccuracy
 import dev.mj31.logger.client.app.resources.Res
 import dev.mj31.logger.client.app.resources.sync_action
 import dev.mj31.logger.client.app.resources.sync_action_again
@@ -33,6 +36,10 @@ import dev.mj31.logger.client.app.resources.sync_frame_time_invalid
 import dev.mj31.logger.client.app.resources.sync_frame_time_label
 import dev.mj31.logger.client.app.resources.sync_hint
 import dev.mj31.logger.client.app.resources.sync_no_overlap
+import dev.mj31.logger.client.app.resources.sync_origin_frame_time
+import dev.mj31.logger.client.app.resources.sync_origin_metadata
+import dev.mj31.logger.client.app.resources.sync_origin_screen_clock
+import dev.mj31.logger.client.app.resources.sync_origin_selected_entry
 import dev.mj31.logger.client.app.resources.sync_state_independent
 import dev.mj31.logger.client.app.resources.sync_state_synchronized
 import dev.mj31.logger.client.app.resources.sync_unknown_time
@@ -98,6 +105,10 @@ fun SyncBar(
             FollowVideoToggle(state = state, onIntent = onIntent)
 
             Spacer(modifier = Modifier.width(width = 12.dp))
+
+            AutoSyncMenu(autoSync = state.autoSync, onIntent = onIntent)
+
+            Spacer(modifier = Modifier.width(width = 8.dp))
 
             if (state.sync.isSynced) {
                 TextButton(onClick = { onIntent(LogPlayerIntent.ClearSynchronization) }) {
@@ -170,10 +181,17 @@ private fun FrameTimeRow(state: LogPlayerState, onIntent: (LogPlayerIntent) -> U
             placeholder = { Text(text = stringResource(resource = Res.string.sync_frame_time_hint)) },
             singleLine = true,
             isError = state.sync.frameTimeError,
-            supportingText = if (state.sync.frameTimeError) {
-                { Text(text = stringResource(resource = Res.string.sync_frame_time_invalid)) }
-            } else {
-                null
+            // Always present, empty when there is nothing wrong: a supporting line that appears only
+            // on an error grows the bar under it and shoves the whole workspace up as the user
+            // types, then drops it back the moment the text becomes valid again.
+            supportingText = {
+                Text(
+                    text = if (state.sync.frameTimeError) {
+                        stringResource(resource = Res.string.sync_frame_time_invalid)
+                    } else {
+                        ""
+                    },
+                )
             },
             textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
             modifier = Modifier.weight(weight = 1f),
@@ -211,10 +229,36 @@ private fun syncDetails(state: LogPlayerState): String {
             formatLogTime(instant = covered.end),
         )
     }
-    return stringResource(
+    val mapping = stringResource(
         resource = Res.string.sync_details,
         formatVideoPosition(positionMillis = state.video.positionMillis),
         playheadTime,
         coverage,
     )
+    val origin = syncOrigin(state = state)
+    return if (origin.isEmpty()) mapping else "$mapping  |  $origin"
+}
+
+/**
+ * Where the anchor came from, and what it is worth.
+ *
+ * An anchor placed by a human is exact by definition and says only how it was placed. One the
+ * application found says how far it may be off, because that is the difference between reading a log
+ * beside the frame that produced it and reading one beside the second that produced it.
+ */
+@Composable
+private fun syncOrigin(state: LogPlayerState): String = when (state.sync.origin) {
+    SyncOrigin.SELECTED_ENTRY -> stringResource(resource = Res.string.sync_origin_selected_entry)
+    SyncOrigin.FRAME_TIME -> stringResource(resource = Res.string.sync_origin_frame_time)
+    SyncOrigin.VIDEO_METADATA -> stringResource(
+        resource = Res.string.sync_origin_metadata,
+        formatAccuracy(millis = state.sync.accuracyMillis),
+    )
+
+    SyncOrigin.SCREEN_CLOCK -> stringResource(
+        resource = Res.string.sync_origin_screen_clock,
+        formatAccuracy(millis = state.sync.accuracyMillis),
+    )
+
+    null -> ""
 }

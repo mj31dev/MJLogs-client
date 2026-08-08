@@ -9,6 +9,7 @@ class SyncStateTest {
     private val anchor = SyncAnchor(
         logTimestamp = Instant.parse("2024-05-01T10:00:30Z"),
         videoPositionMillis = 10_000L,
+        origin = SyncOrigin.SELECTED_ENTRY,
         logEntryId = "entry-1",
     )
 

@@ -53,19 +53,32 @@ fun PlayerScreen(
             .fillMaxSize()
             .background(color = MaterialTheme.colorScheme.background),
     ) {
-        if (state.isImporting) {
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-        }
+        // Everything transient floats over the workspace instead of sharing the column with it: a
+        // notice or a progress bar that takes part in the layout resizes both panes as it appears
+        // and again as it goes, moving the very records the user is reading about.
+        Box(modifier = Modifier.weight(weight = 1f)) {
+            SplitWorkspace(
+                state = state,
+                frame = frame,
+                onIntent = onIntent,
+                modifier = Modifier.fillMaxSize(),
+            )
 
-        SplitWorkspace(
-            state = state,
-            frame = frame,
-            onIntent = onIntent,
-            modifier = Modifier.weight(weight = 1f),
-        )
+            if (state.isImporting) {
+                LinearProgressIndicator(
+                    modifier = Modifier
+                        .align(alignment = Alignment.TopCenter)
+                        .fillMaxWidth(),
+                )
+            }
 
-        message?.let { notice ->
-            MessageBar(message = notice, onDismiss = onDismissMessage)
+            message?.let { notice ->
+                MessageBar(
+                    message = notice,
+                    onDismiss = onDismissMessage,
+                    modifier = Modifier.align(alignment = Alignment.BottomCenter),
+                )
+            }
         }
 
         SyncBar(state = state, onIntent = onIntent)
@@ -92,6 +105,7 @@ private fun SplitWorkspace(
             VideoPane(
                 video = state.video,
                 frame = frame,
+                autoSync = state.autoSync,
                 onIntent = onIntent,
                 modifier = Modifier
                     .width(width = availableWidth * splitFraction)

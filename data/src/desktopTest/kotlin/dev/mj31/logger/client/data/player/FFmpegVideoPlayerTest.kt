@@ -70,7 +70,11 @@ class FFmpegVideoPlayerTest {
 
         val moved = await(player = player) { it.positionMillis >= SEEK_TARGET_MILLIS - SEEK_TOLERANCE_MILLIS }
         assertThat(moved).isTrue()
-        assertThat(player.frames.value?.sequence).isGreaterThan(first.sequence)
+
+        // The position and the picture are published in that order, so waiting on the position and
+        // then asserting on the frame is a race the decoder wins about one run in twenty.
+        val redrawn = await(player = player) { (player.frames.value?.sequence ?: 0L) > first.sequence }
+        assertThat(redrawn).isTrue()
     }
 
     @Test

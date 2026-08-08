@@ -11,6 +11,9 @@ It bundles the components below; their licenses are listed as declared by the ar
 | Compose Multiplatform, Skiko, AndroidX Lifecycle | Apache-2.0 | Skiko embeds Skia (BSD-3-Clause) |
 | kotlin-inject | Apache-2.0 | |
 | JavaCV, JavaCPP | Apache-2.0 | Triple licensed (Apache-2.0 / GPLv2 / GPLv2+CPE); Apache-2.0 is the option taken here |
+| Tesseract OCR 5.5.2 (`org.bytedeco:tesseract`) | Apache-2.0 | Reads the clock a screencast displays, entirely on the machine |
+| `eng.traineddata` (from `tessdata_best`) | Apache-2.0 | The recognition model, bundled so the feature needs no network |
+| Leptonica 1.87.0 (`org.bytedeco:leptonica`) | BSD-2-Clause | Tesseract's image layer; pulled in with it |
 | **FFmpeg** native libraries (`org.bytedeco:ffmpeg`) | **LGPL-3.0-or-later** | See below |
 | Bundled OpenJDK runtime (added by `jpackage`) | GPL-2.0 with Classpath Exception | The exception explicitly permits bundling with an application under any license |
 
@@ -41,7 +44,7 @@ Obligations honoured here, each verified against the artifact that actually ship
   summary of what is bundled leads to the full texts. The MSI and DEB installers additionally carry
   `LICENSE.txt` as their installer licence.
 
-`app/legal/common/` is the single source for all of this: `app/build.gradle.kts` points
+`app/appResources/common/` is the single source for all of this: `app/build.gradle.kts` points
 `appResourcesRootDir` at it, stages it into the disk image and the app reads it back at runtime, and
 `LegalNoticeAssetsTest` fails the build if a file goes missing, if the shipped `LICENSE.txt` drifts
 from the repository `LICENSE`, or if the FFmpeg version in the version catalog stops matching the one

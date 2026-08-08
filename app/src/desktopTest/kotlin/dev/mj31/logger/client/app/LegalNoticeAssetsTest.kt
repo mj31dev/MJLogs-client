@@ -54,12 +54,27 @@ class LegalNoticeAssetsTest {
         assertThat(legalFile(name = "THIRD-PARTY.txt").readText()).contains(bundledVersion)
     }
 
-    private fun legalFile(name: String): File = File(moduleDirectory(), "legal/common/$name")
+    /**
+     * The recognizer is bundled, not fetched: an application that promises to work offline cannot
+     * ask for a network on the first screencast it is given. Absent, the automatic synchronization
+     * silently degrades to metadata alone, which is exactly the failure a test should catch.
+     */
+    @Test
+    fun `the recognition model the automatic synchronization needs is bundled`() {
+        val model = File(appResourcesDirectory(), "tessdata/eng.traineddata")
+
+        assertThat(model.isFile).isTrue()
+        assertThat(model.length()).isGreaterThan(1_000_000L)
+    }
+
+    private fun legalFile(name: String): File = File(appResourcesDirectory(), name)
+
+    private fun appResourcesDirectory(): File = File(moduleDirectory(), "appResources/common")
 
     /** Tests run from the module directory in Gradle and from the repository root in some IDEs. */
     private fun moduleDirectory(): File {
         val current = File(".").absoluteFile.normalize()
-        return if (File(current, "legal").isDirectory) current else File(current, "app")
+        return if (File(current, "appResources").isDirectory) current else File(current, "app")
     }
 
     private fun repositoryRoot(): File = moduleDirectory().parentFile

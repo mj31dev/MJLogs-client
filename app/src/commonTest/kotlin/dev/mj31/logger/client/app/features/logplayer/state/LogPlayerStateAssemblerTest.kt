@@ -5,6 +5,7 @@ import dev.mj31.logger.client.app.fake.LogPlayerFixtures
 import dev.mj31.logger.client.domain.player.PlaybackState
 import dev.mj31.logger.client.domain.player.PlaybackStatus
 import dev.mj31.logger.client.domain.sync.SyncAnchor
+import dev.mj31.logger.client.domain.sync.SyncOrigin
 import dev.mj31.logger.client.domain.sync.SyncState
 import kotlin.test.Test
 import dev.mj31.logger.client.app.usecase.timeline.ResolveTimelineOverlapUseCase
@@ -13,7 +14,7 @@ import dev.mj31.logger.client.app.usecase.timeline.FindEntryAtVideoPositionUseCa
 import dev.mj31.logger.client.app.usecase.session.MergeLogSourcesUseCase
 import dev.mj31.logger.client.domain.model.media.VideoMedia
 import dev.mj31.logger.client.domain.model.log.LogFilter
-import dev.mj31.logger.client.app.usecase.sync.ParseFrameTimeUseCase
+import dev.mj31.logger.client.app.usecase.sync.manual.ParseFrameTimeUseCase
 
 class LogPlayerStateAssemblerTest {
 
@@ -102,6 +103,7 @@ class LogPlayerStateAssemblerTest {
         anchor = SyncAnchor(
             logTimestamp = LogPlayerFixtures.at(offsetMillis = 0L),
             videoPositionMillis = 0L,
+            origin = SyncOrigin.SELECTED_ENTRY,
             logEntryId = "a",
         ),
     )

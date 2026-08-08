@@ -51,13 +51,14 @@ tasks.register("verifySourceLayout") {
     }
 }
 
+/**
+ * One task, not two.
+ *
+ * `autoCorrect` is on, so this reformats what the formatting ruleset can fix and fails on what it
+ * cannot: a long function, a magic number, a positional argument. A second task that only checked
+ * would run the very same analysis, so the pair `format` then `check` was one command twice.
+ */
 tasks.named("detekt") { dependsOn("verifySourceLayout") }
-
-tasks.register("detektFormat") {
-    description = "Reformats code according to Detekt 2.0 formatting rules across all subprojects."
-    group = "formatting"
-    dependsOn("detekt")
-}
 
 tasks.register("test") {
     description = "Runs multiplatform unit tests across all modules."

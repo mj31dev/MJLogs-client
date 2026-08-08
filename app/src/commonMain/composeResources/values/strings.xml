@@ -25,6 +25,13 @@
     <string name="message_load_screencast_first">Load a screencast first</string>
     <string name="message_synchronized_with_line">Synchronized with line %1$s</string>
     <string name="message_synchronized_with_time">Synchronized: this frame is %1$s</string>
+    <string name="message_auto_synchronized_metadata">Synchronized from the file metadata: the recording starts at %1$s</string>
+    <string name="message_auto_synchronized_clock">Synchronized from the clock on screen: the recording starts at %1$s</string>
+    <string name="message_clock_not_found">No clock could be found on the recording — draw a rectangle around it</string>
+    <string name="message_no_minute_change">The clock never changes minute in this recording, so it cannot pin down a moment</string>
+    <string name="message_auto_sync_unavailable">Automatic synchronization needs a screencast and at least one log file</string>
+    <string name="message_recognizer_missing">The clock recognizer is not available in this build, so only the file metadata can be used</string>
+    <string name="message_video_unreadable">This screencast could not be opened for reading the clock off it</string>
 
     <!-- Screencast pane -->
     <string name="video_title">Screencast</string>
@@ -39,6 +46,10 @@
     <string name="video_empty_description">Open a video file to start; the log list works independently until you synchronize them.</string>
     <string name="video_play">Play</string>
     <string name="video_pause">Pause</string>
+    <string name="video_step_second_back">− 1s</string>
+    <string name="video_step_frame_back">− 1 frame</string>
+    <string name="video_step_frame_forward">+ 1 frame</string>
+    <string name="video_step_second_forward">+ 1s</string>
 
     <!-- Log pane -->
     <string name="log_title">Log session</string>
@@ -85,6 +96,20 @@
     <string name="sync_frame_time_picker_confirm">OK</string>
     <string name="sync_frame_time_picker_cancel">Cancel</string>
     <string name="sync_frame_time_invalid">Enter a time such as 2026-06-29 18:50:07.267 or 18:50:07</string>
+
+    <!-- Synchronization the application performs by itself -->
+    <string name="sync_auto_menu">Automatic…</string>
+    <string name="sync_auto_run">Synchronize automatically</string>
+    <string name="sync_auto_refine">Refine using the clock on screen</string>
+    <string name="sync_auto_pick_region">Point at the clock…</string>
+    <string name="sync_auto_scanning">Reading the clock on the recording…</string>
+    <string name="sync_auto_cancel">Cancel</string>
+    <string name="sync_auto_region_hint">Drag a rectangle around the clock shown in the recording.</string>
+    <string name="sync_auto_region_cancel">Cancel</string>
+    <string name="sync_origin_selected_entry">by the selected record</string>
+    <string name="sync_origin_frame_time">by the time you typed</string>
+    <string name="sync_origin_metadata">from the file metadata, ±%1$s</string>
+    <string name="sync_origin_screen_clock">from the clock on screen, ±%1$s</string>
 
     <!-- Format wizard -->
     <string name="format_dialog_confirm_title">Check how %1$s was read</string>

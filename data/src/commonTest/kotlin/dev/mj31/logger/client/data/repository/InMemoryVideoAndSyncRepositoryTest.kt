@@ -2,6 +2,7 @@ package dev.mj31.logger.client.data.repository
 
 import com.google.common.truth.Truth.assertThat
 import dev.mj31.logger.client.domain.sync.SyncAnchor
+import dev.mj31.logger.client.domain.sync.SyncOrigin
 import dev.mj31.logger.client.domain.sync.SyncState
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -46,7 +47,12 @@ class InMemoryVideoAndSyncRepositoryTest {
     @Test
     fun `an anchor can be set, replaced and cleared`() = runTest {
         val repository = InMemorySyncRepository()
-        val anchor = SyncAnchor(logTimestamp = INSTANT, videoPositionMillis = 1_000L, logEntryId = "e1")
+        val anchor = SyncAnchor(
+            logTimestamp = INSTANT,
+            videoPositionMillis = 1_000L,
+            origin = SyncOrigin.SELECTED_ENTRY,
+            logEntryId = "e1",
+        )
 
         repository.setAnchor(anchor = anchor)
         assertThat(repository.syncState.value.anchorOrNull).isEqualTo(anchor)

@@ -3,12 +3,13 @@ package dev.mj31.logger.client.app.usecase.timeline
 import com.google.common.truth.Truth.assertThat
 import dev.mj31.logger.client.app.fake.log.TestLogEntries
 import dev.mj31.logger.client.domain.sync.SyncAnchor
+import dev.mj31.logger.client.domain.sync.SyncOrigin
 import dev.mj31.logger.client.domain.sync.SyncState
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import dev.mj31.logger.client.app.fake.repository.FakeSyncRepository
-import dev.mj31.logger.client.app.usecase.sync.SynchronizeTimelinesUseCase
-import dev.mj31.logger.client.app.usecase.sync.ClearSynchronizationUseCase
+import dev.mj31.logger.client.app.usecase.sync.manual.SynchronizeTimelinesUseCase
+import dev.mj31.logger.client.app.usecase.sync.manual.ClearSynchronizationUseCase
 
 class SyncUseCasesTest {
 
@@ -84,6 +85,7 @@ class SyncUseCasesTest {
         val anchor = SyncAnchor(
             logTimestamp = entry.timestamp,
             videoPositionMillis = 30_000L,
+            origin = SyncOrigin.SELECTED_ENTRY,
             logEntryId = entry.id,
         )
         val repository = FakeSyncRepository(initialState = SyncState.Synced(anchor = anchor))
@@ -108,7 +110,11 @@ class SyncUseCasesTest {
 
     @Test
     fun `an anchor without a log entry id is still a valid mapping`() {
-        val anchor = SyncAnchor(logTimestamp = TestLogEntries.BASE, videoPositionMillis = 1_500L)
+        val anchor = SyncAnchor(
+            logTimestamp = TestLogEntries.BASE,
+            videoPositionMillis = 1_500L,
+            origin = SyncOrigin.FRAME_TIME,
+        )
 
         assertThat(anchor.logEntryId).isNull()
         assertThat(anchor.videoStartInstant).isEqualTo(TestLogEntries.at(offsetMillis = -1_500L))
