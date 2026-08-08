@@ -4,7 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import dev.mj31.logger.client.app.fake.repository.FakeSyncRepository
 import dev.mj31.logger.client.domain.sync.SyncState
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 
 class SynchronizeAtTimestampUseCaseTest {

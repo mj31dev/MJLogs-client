@@ -23,7 +23,7 @@ import dev.mj31.logger.client.app.resources.sync_frame_time_picker_cancel
 import dev.mj31.logger.client.app.resources.sync_frame_time_picker_confirm
 import dev.mj31.logger.client.app.resources.sync_frame_time_picker_hint
 import dev.mj31.logger.client.app.resources.sync_frame_time_picker_title
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource

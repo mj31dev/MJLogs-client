@@ -1,7 +1,7 @@
 package dev.mj31.logger.client.app.view.format
 
 import com.google.common.truth.Truth.assertThat
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
 import kotlin.test.Test
 

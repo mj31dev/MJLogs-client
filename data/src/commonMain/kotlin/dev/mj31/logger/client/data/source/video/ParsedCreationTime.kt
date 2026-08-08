@@ -1,6 +1,6 @@
 package dev.mj31.logger.client.data.source.video
 
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * What [CreationTimeParser] could establish about when a recording started.

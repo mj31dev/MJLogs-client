@@ -5,7 +5,7 @@ import dev.mj31.logger.client.domain.sync.SyncAnchor
 import dev.mj31.logger.client.domain.sync.SyncOrigin
 import dev.mj31.logger.client.domain.sync.SyncState
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 import dev.mj31.logger.client.domain.model.media.VideoMedia
 

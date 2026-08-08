@@ -1,7 +1,7 @@
 package dev.mj31.logger.client.domain.sync
 
 import kotlin.time.Duration.Companion.milliseconds
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * Correlation point between the two timelines: [logTimestamp] happened exactly at

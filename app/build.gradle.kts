@@ -7,7 +7,6 @@ plugins {
 
 kotlin {
     jvm("desktop") {
-        withJava()
         mainRun {
             mainClass = "dev.mj31.logger.client.app.MainKt"
         }

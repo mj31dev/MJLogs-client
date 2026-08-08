@@ -3,7 +3,7 @@ package dev.mj31.logger.client.app.usecase.sync.manual
 import dev.mj31.logger.client.domain.repository.SyncRepository
 import dev.mj31.logger.client.domain.sync.SyncAnchor
 import dev.mj31.logger.client.domain.sync.SyncOrigin
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * Pins an arbitrary wall clock instant to the current video position.

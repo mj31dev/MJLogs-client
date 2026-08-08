@@ -86,4 +86,9 @@ are read-only, the third may write inside test directories. `.claude/skills/` ho
 `log-format-pipeline`, `compose-ui-testing` and `mvi-logplayer`, which load themselves when relevant.
 `.claude/commands/` holds `/review` and `/verify-ui`.
 
-Commits and pushes are denied to Claude Code in `.claude/settings.json`: the user creates them.
+Claude Code is sandboxed to this repository in `.claude/settings.json`: ordinary local work runs
+without permission prompts, while commit-producing commands and all Git remote operations are
+denied. The user creates commits and handles remotes. Gradle Wrapper and JVM commands are explicit
+sandbox exceptions because JVM networking is incompatible with the macOS sandbox proxy. Gradle may
+read and write the user's `~/.gradle` cache; Kotlin/Native keeps its home in an ignored directory
+inside this repository.

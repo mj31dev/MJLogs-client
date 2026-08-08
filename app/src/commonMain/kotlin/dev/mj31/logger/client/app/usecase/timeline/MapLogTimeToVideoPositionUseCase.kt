@@ -1,7 +1,7 @@
 package dev.mj31.logger.client.app.usecase.timeline
 
 import dev.mj31.logger.client.domain.sync.SyncAnchor
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * Converts a log timestamp into a video position.

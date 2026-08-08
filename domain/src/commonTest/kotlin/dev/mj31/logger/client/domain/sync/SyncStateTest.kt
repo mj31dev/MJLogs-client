@@ -1,7 +1,7 @@
 package dev.mj31.logger.client.domain.sync
 
 import com.google.common.truth.Truth.assertThat
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 
 class SyncStateTest {

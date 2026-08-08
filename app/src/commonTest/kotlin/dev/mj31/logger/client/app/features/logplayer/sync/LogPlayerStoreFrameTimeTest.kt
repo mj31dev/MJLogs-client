@@ -8,7 +8,7 @@ import dev.mj31.logger.client.app.resources.message_load_screencast_first
 import dev.mj31.logger.client.app.view.text.UiText
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * Synchronizing on a time read off the frame itself.

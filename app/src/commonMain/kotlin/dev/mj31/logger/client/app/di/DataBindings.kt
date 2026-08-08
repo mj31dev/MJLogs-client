@@ -10,7 +10,7 @@ import dev.mj31.logger.client.domain.format.parse.LogLineParserFactory
 import dev.mj31.logger.client.domain.repository.LogSessionRepository
 import dev.mj31.logger.client.domain.repository.SyncRepository
 import dev.mj31.logger.client.domain.repository.VideoRepository
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlinx.datetime.TimeZone
 import me.tatarka.inject.annotations.Provides
 import dev.mj31.logger.client.app.usecase.session.MergeLogSourcesUseCase

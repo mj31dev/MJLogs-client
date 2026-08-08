@@ -3,7 +3,7 @@ package dev.mj31.logger.client.app.fake.format
 import dev.mj31.logger.client.domain.format.parse.LogLineParser
 import dev.mj31.logger.client.domain.format.parse.ParsedLine
 import dev.mj31.logger.client.domain.model.log.LogLevel
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /** Parser produced by [ScriptedLogLineParserFactory]; stateless and therefore reusable per line. */
 class ScriptedLogLineParser(

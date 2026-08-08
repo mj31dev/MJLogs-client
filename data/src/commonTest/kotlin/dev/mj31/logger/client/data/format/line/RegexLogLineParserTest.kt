@@ -4,7 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import dev.mj31.logger.client.domain.format.spec.LogFormatSpec
 import dev.mj31.logger.client.domain.format.parse.LogLineParser
 import dev.mj31.logger.client.domain.format.parse.ParsedLine
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
