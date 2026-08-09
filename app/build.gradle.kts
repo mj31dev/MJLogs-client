@@ -1,3 +1,5 @@
+import java.io.ByteArrayOutputStream
+
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.compose.multiplatform)
@@ -172,6 +174,157 @@ tasks.withType<org.jetbrains.compose.desktop.application.tasks.AbstractJPackageT
         )
     }
 
+/**
+ * Everything that decides how the disk image looks, drawn outside the build and committed.
+ *
+ * `background@2x.png` is the artwork; `dmg-setup.scpt` is the AppleScript that arranges the window
+ * over it. The two share one grid, written down in `dmg/README.md`, because Finder never scales a
+ * background picture: a drawing that does not match the window it sits behind cannot be nudged into
+ * place afterwards, it is simply wrong by however many points it is off.
+ */
+val dmgDesignDirectory: Directory = layout.projectDirectory.dir("dmg")
+
+/** Size of the disk image window in points, and therefore of the artwork at @1x. */
+val dmgWindowWidth = 660
+val dmgWindowHeight = 440
+
+val dmgResourcesDirectory: Provider<Directory> = layout.buildDirectory.dir("dmg/resources")
+val dmgBackgroundFile: Provider<RegularFile> =
+    layout.buildDirectory.file("dmg/background/$appPackageName-background.tiff")
+
+/** The script the shell tools live in; `sips` and `tiffutil` have no Gradle equivalent. */
+val backgroundScript: RegularFile = rootProject.layout.projectDirectory.file("scripts/make-dmg-background.sh")
+
+/**
+ * Turns the artwork into the picture Finder can actually show.
+ *
+ * A Retina display needs the background at twice the size, and one TIFF carries both
+ * representations — which is why the committed asset is a PNG and the staged one is not.
+ */
+val buildDmgBackground = tasks.register<Exec>("buildDmgBackground") {
+    description = "Converts the disk image artwork into the two-resolution TIFF that Finder shows."
+    group = "distribution"
+    onlyIf { isMacOsHost }
+
+    // A file collection rather than `inputs.file`, which fails on a missing input before the task
+    // runs and would replace the script's explanation with Gradle's.
+    val artwork = dmgDesignDirectory.file("background@2x.png")
+    inputs.files(artwork)
+    inputs.file(backgroundScript)
+    outputs.file(dmgBackgroundFile)
+
+    executable = backgroundScript.asFile.absolutePath
+    argumentProviders.add(
+        CommandLineArgumentProvider {
+            listOf(
+                artwork.asFile.absolutePath,
+                dmgBackgroundFile.get().asFile.absolutePath,
+                dmgWindowWidth.toString(),
+                dmgWindowHeight.toString(),
+            )
+        },
+    )
+}
+
+/**
+ * The three files jpackage reads to decide how the disk image looks, under the names it looks for.
+ *
+ * jpackage finds a resource by `<package name>-<role>`, falls back to its own template for anything
+ * missing, and says which of the two it used at `--verbose`. The volume icon is the application icon:
+ * a mounted disk that carries the drawing of the thing inside it needs no label.
+ */
+val stageDmgResources = tasks.register<Sync>("stageDmgResources") {
+    description = "Collects the artwork, the window script and the volume icon for jpackage."
+    group = "distribution"
+    onlyIf { isMacOsHost }
+
+    from(buildDmgBackground)
+    from(dmgDesignDirectory.file("dmg-setup.scpt")) { rename { "$appPackageName-dmg-setup.scpt" } }
+    from(project.file("icons/icon.icns")) { rename { "$appPackageName-volume.icns" } }
+    into(dmgResourcesDirectory)
+}
+
+/**
+ * Builds the disk image by calling jpackage directly, which is the only way to style it at all.
+ *
+ * Compose runs jpackage itself for `packageDmg`, and passes `--resource-dir` pointing at a directory
+ * it wipes inside its own task action — so the overrides above cannot be put there. `freeArgs` are no
+ * way round it either: Compose emits them *before* its own arguments, and of two `--resource-dir`
+ * options jpackage keeps the last. Both halves of that were checked against jpackage 21 rather than
+ * assumed. What is left is to run the tool ourselves, over the application bundle Compose has already
+ * built, and hand it the directory we want.
+ *
+ * `packageDmg` still works and still carries the notices; it is simply not what a release ships.
+ */
+val packageStyledDmg = tasks.register<Exec>("packageStyledDmg") {
+    description = "Builds the styled macOS disk image from the application bundle."
+    group = "distribution"
+    onlyIf { isMacOsHost }
+
+    val appImageDirectory = tasks
+        .named<org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask>("createDistributable")
+        .flatMap { it.destinationDir }
+    val stagedNotices = layout.buildDirectory.dir("legal/$dmgLegalFolderName")
+    val imageDirectory = layout.buildDirectory.dir("dmg/image")
+
+    dependsOn(stageDmgResources, stageDmgLegalNotices)
+    inputs.dir(appImageDirectory)
+    inputs.dir(dmgResourcesDirectory)
+    inputs.dir(stagedNotices)
+    outputs.dir(imageDirectory)
+
+    executable = File(System.getProperty("java.home"), "bin/jpackage").absolutePath
+    argumentProviders.add(
+        CommandLineArgumentProvider {
+            listOf(
+                "--type", "dmg",
+                "--name", appPackageName,
+                "--app-version", installerVersion(version = project.version.toString()),
+                "--app-image", appImageDirectory.get().asFile.resolve("$appPackageName.app").absolutePath,
+                "--resource-dir", dmgResourcesDirectory.get().asFile.absolutePath,
+                "--mac-dmg-content", stagedNotices.get().asFile.absolutePath,
+                "--dest", imageDirectory.get().asFile.absolutePath,
+                "--verbose",
+            )
+        },
+    )
+
+    // Everything jpackage says is kept and only shown when something is wrong: `--verbose` is on
+    // because the log is the only place the layout step reports itself, and it is several hundred
+    // lines of hdiutil noise otherwise.
+    val log = ByteArrayOutputStream()
+    standardOutput = log
+    errorOutput = log
+    isIgnoreExitValue = true
+
+    // jpackage refuses to overwrite an image it built before, and leaves the stale one behind.
+    doFirst { imageDirectory.get().asFile.deleteRecursively() }
+
+    doLast {
+        val output = log.toString()
+        val failed = executionResult.get().exitValue != 0
+
+        // An unauthorised layout script does not stop jpackage: it writes a perfectly valid disk
+        // image with the icons where Finder happened to drop them, and exits zero. That is worse
+        // than a failure, because the only symptom is an installer that looks wrong.
+        val layoutRefused = output.contains("execution error") || output.contains("-1743")
+
+        if (failed || layoutRefused) {
+            logger.error(output)
+        }
+        if (!failed && layoutRefused) {
+            throw GradleException(
+                "The disk image was built but not arranged: macOS refused the layout script " +
+                    "permission to control Finder. Grant it under System Settings > Privacy & " +
+                    "Security > Automation for the program that started this build, then run again.",
+            )
+        }
+        if (failed) {
+            throw GradleException("jpackage failed to build the disk image; its output is above.")
+        }
+    }
+}
+
 /** Must match `SessionFile.EXTENSION`; the build cannot read a Kotlin constant it is compiling. */
 val sessionExtension = "mjclog"
 val sessionTypeName = "MJLogs session"
@@ -280,10 +433,10 @@ val macDocumentTypes = """
 tasks.register<Copy>("dmg") {
     description = "Builds the macOS installer and names it after the full product version."
     group = "distribution"
-    dependsOn("packageDmg")
+    dependsOn(packageStyledDmg)
 
     val installerName = "$appPackageName-${project.version}.dmg"
-    from(layout.buildDirectory.dir("compose/binaries/main/dmg")) {
+    from(layout.buildDirectory.dir("dmg/image")) {
         include("*.dmg")
         rename { installerName }
     }

@@ -112,9 +112,18 @@ unrecognizable so the manual-format dialog can be tried (timestamp `dd.MM.yyyy_H
 One command produces a self-contained `.app` with its own JRE, wraps it into a `.dmg` and writes it
 to `app/build/distributions/MJLogs-1.0.0-alpha1.dmg`. The version comes from `version` in
 `gradle.properties` and is the single source of truth for every module. (`:app:packageDmg` is the
-plain Compose task underneath; it leaves the installer in `build/compose/binaries/main/dmg/`.)
+plain Compose task; it still works and still carries the notices, but it is not what a release ships
+— see below.)
 
-Two things worth knowing about the packaged build:
+Three things worth knowing about the packaged build:
+
+- **The disk image is arranged by hand, and that needs permission.** `:app:dmg` runs jpackage itself
+  rather than through Compose, because Compose points `--resource-dir` at a directory it wipes inside
+  its own task action and there is no way to get the artwork in there. The final step is an
+  AppleScript that positions the icons over the background, and macOS will ask whether the program
+  running the build may control Finder. Say yes: if it is refused, jpackage writes a valid but
+  unarranged image and still exits zero, so the build fails on purpose instead. What the image looks
+  like, and the grid the artwork follows, is in [`app/dmg/README.md`](app/dmg/README.md).
 
 - **Installer versions are numeric.** jpackage accepts `MAJOR[.MINOR][.PATCH]` with a major above
   zero on every platform, so a pre-release qualifier cannot live in installer metadata: the product

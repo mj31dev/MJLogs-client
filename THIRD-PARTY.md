@@ -11,6 +11,7 @@ It bundles the components below; their licenses are listed as declared by the ar
 | Compose Multiplatform, Skiko, AndroidX Lifecycle | Apache-2.0 | Skiko embeds Skia (BSD-3-Clause) |
 | AndroidX support libraries pulled in with the above (`annotation`, `arch.core`, `collection`, `savedstate`, `navigationevent`) | Apache-2.0 | Transitive; nobody chose them, they still ship |
 | JSpecify | Apache-2.0 | Nullness annotations, transitive |
+| JetBrains Annotations (`org.jetbrains:annotations`), JetBrains Runtime API (`org.jetbrains.runtime:jbr-api`) | Apache-2.0 | Transitive, pulled in with Kotlin and Compose Desktop |
 | kotlin-inject | Apache-2.0 | |
 | AndroidX Room (`androidx.room`) | Apache-2.0 | Stores the workspace and the saved sessions |
 | AndroidX SQLite with the bundled driver (`androidx.sqlite:sqlite-bundled`) | Apache-2.0 | Carries its own SQLite build, so no system library is needed |

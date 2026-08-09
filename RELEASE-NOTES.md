@@ -71,9 +71,14 @@ near-black workspace are close to invisible on white, so they are not reused.
 
 ## Download
 
-`MJLogs-1.0.0-alpha2.dmg` — macOS on **Apple Silicon**. The bundle carries its own Java 21 runtime,
-the FFmpeg libraries, the Tesseract recognizer and its English model, so it is noticeably larger than
-the first alpha.
+`MJLogs-1.0.0-alpha2.dmg` — macOS on **Apple Silicon**, 111 MB. The bundle carries its own Java 21
+runtime, the FFmpeg libraries, the Tesseract recognizer and its English model, so it is noticeably
+larger than the first alpha.
+
+The disk image itself has been laid out rather than left to the default: the application and the
+`Applications` folder sit side by side with the gesture between them drawn on the background, the
+volume carries the application's own icon, and the `Licenses` folder is in plain sight instead of
+buried in the bundle.
 
 The app is **not notarized**, so macOS refuses it on first launch. Open it once with right-click →
 *Open*, or clear the quarantine flag:
@@ -119,7 +124,7 @@ The recording shows a clock, so *Synchronize automatically* has something to rea
 Kotlin 2.3.21, Compose Multiplatform 1.11.1, Gradle 9.7, Room 2.8.4 with a bundled SQLite. Clean
 architecture across `:domain`, `:data` and `:app` with a compile-time DI graph; the visual rules are
 written down rather than implied, and screens are rendered and inspected as part of building them.
-A suite of 604 tests reaches from the parsers to rendered UI, with Detekt on every build.
+A suite of 608 tests reaches from the parsers to rendered UI, with Detekt on every build.
 
 Apache 2.0; the bundled FFmpeg binaries are LGPL v3 and dynamically loaded, details in
 [THIRD-PARTY.md](THIRD-PARTY.md).
