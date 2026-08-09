@@ -1,6 +1,6 @@
 package dev.mj31.logger.client.domain.model.time
 
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /** Inclusive time interval used for session bounds and for time based filtering. */
 data class TimeRange(

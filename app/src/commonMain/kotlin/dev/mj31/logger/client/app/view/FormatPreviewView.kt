@@ -31,8 +31,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.mj31.logger.client.app.theme.AccentSync
-import dev.mj31.logger.client.app.theme.LogLevelInfo
-import dev.mj31.logger.client.app.theme.LogLevelWarn
+import dev.mj31.logger.client.app.theme.LocalLogLevelColors
 import dev.mj31.logger.client.domain.format.preview.FormatPreview
 import dev.mj31.logger.client.domain.format.LogComponent
 import dev.mj31.logger.client.domain.format.preview.PreviewLine
@@ -85,8 +84,8 @@ fun FormatPreviewView(preview: FormatPreview, modifier: Modifier = Modifier) {
 @Composable
 private fun statusColor(preview: FormatPreview.Ready): Color = when {
     preview.matchedLines == 0 -> MaterialTheme.colorScheme.error
-    preview.matchedLines < preview.totalLines -> LogLevelWarn
-    else -> LogLevelInfo
+    preview.matchedLines < preview.totalLines -> LocalLogLevelColors.current.warn
+    else -> LocalLogLevelColors.current.info
 }
 
 @Composable
@@ -166,7 +165,7 @@ private data class PreviewPalette(
 @Composable
 private fun previewPalette(): PreviewPalette = PreviewPalette(
     timestamp = MaterialTheme.colorScheme.primary,
-    level = LogLevelWarn,
+    level = LocalLogLevelColors.current.warn,
     tag = AccentSync,
     message = MaterialTheme.colorScheme.onSurface,
     separator = MaterialTheme.colorScheme.onSurfaceVariant,

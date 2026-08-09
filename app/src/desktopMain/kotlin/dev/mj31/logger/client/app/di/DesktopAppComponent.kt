@@ -1,6 +1,8 @@
 package dev.mj31.logger.client.app.di
 
 import dev.mj31.logger.client.app.features.logplayer.LogPlayerStore
+import dev.mj31.logger.client.app.features.sessions.SessionsStore
+import dev.mj31.logger.client.app.platform.AppDirectories
 import dev.mj31.logger.client.app.platform.NativeFileChooser
 import dev.mj31.logger.client.app.platform.TessdataDirectory
 import dev.mj31.logger.client.app.platform.FileChooser
@@ -9,11 +11,19 @@ import dev.mj31.logger.client.data.legal.BundledLegalNoticeRepository
 import dev.mj31.logger.client.data.player.DesktopVideoPlayerProvider
 import dev.mj31.logger.client.data.source.LocalTextFileDataSource
 import dev.mj31.logger.client.data.source.UuidIdGenerator
+import dev.mj31.logger.client.data.session.ZipSessionPackageStore
 import dev.mj31.logger.client.data.source.video.FFmpegVideoFrameScanner
 import dev.mj31.logger.client.data.source.video.FFmpegVideoMetadataSource
 import dev.mj31.logger.client.data.sync.screen.TesseractScreenClockReader
+import dev.mj31.logger.client.data.workspace.MjLogsDatabaseFactory
+import dev.mj31.logger.client.data.preferences.RoomPreferencesRepository
+import dev.mj31.logger.client.data.workspace.RoomWorkspaceRepository
+import dev.mj31.logger.client.data.workspace.db.MjLogsDatabase
 import dev.mj31.logger.client.domain.player.VideoPlayer
 import dev.mj31.logger.client.domain.repository.LegalNoticeRepository
+import dev.mj31.logger.client.domain.repository.WorkspaceRepository
+import dev.mj31.logger.client.domain.repository.preferences.PreferencesRepository
+import dev.mj31.logger.client.domain.session.SessionPackageStore
 import dev.mj31.logger.client.domain.source.IdGenerator
 import dev.mj31.logger.client.domain.source.TextFileDataSource
 import dev.mj31.logger.client.domain.source.video.VideoFrameScanner
@@ -25,6 +35,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.runBlocking
 import me.tatarka.inject.annotations.Component
 import me.tatarka.inject.annotations.Provides
 
@@ -45,9 +56,13 @@ abstract class DesktopAppComponent :
 
     abstract val store: LogPlayerStore
 
+    abstract val sessionsStore: SessionsStore
+
     abstract val fileChooser: FileChooser
 
     abstract val readLegalNotices: ReadLegalNoticesUseCase
+
+    abstract val preferences: PreferencesRepository
 
     /**
      * Accessor rather than a direct call to the provider: only the accessor returns the single
@@ -75,6 +90,36 @@ abstract class DesktopAppComponent :
 
     @Provides
     fun idGenerator(): IdGenerator = UuidIdGenerator()
+
+    /**
+     * The application's own store, opened once and kept open for the run.
+     *
+     * A session package carries a database of this very schema, but that one is opened per operation
+     * and closed again: it belongs to the user and may be moved or deleted at any moment.
+     */
+    @AppScope
+    @Provides
+    fun mjLogsDatabase(dispatcher: IoDispatcher): MjLogsDatabase = MjLogsDatabaseFactory.open(
+        path = AppDirectories.databaseFile().absolutePath,
+        dispatcher = dispatcher,
+    )
+
+    @AppScope
+    @Provides
+    fun workspaceRepository(database: MjLogsDatabase, dispatcher: IoDispatcher): WorkspaceRepository =
+        RoomWorkspaceRepository(database = database, dispatcher = dispatcher)
+
+    @AppScope
+    @Provides
+    fun preferencesRepository(database: MjLogsDatabase, dispatcher: IoDispatcher): PreferencesRepository =
+        RoomPreferencesRepository(database = database, dispatcher = dispatcher)
+
+    @AppScope
+    @Provides
+    fun sessionPackageStore(dispatcher: IoDispatcher): SessionPackageStore = ZipSessionPackageStore(
+        cacheDirectory = AppDirectories.cache(),
+        dispatcher = dispatcher,
+    )
 
     /**
      * Compose points this system property at the folder jpackage filled from `app/appResources/common`.
@@ -122,8 +167,15 @@ abstract class DesktopAppComponent :
     fun screenClockReader(): ScreenClockReader =
         TesseractScreenClockReader(dataDirectory = TessdataDirectory.locate())
 
-    /** Releases the native playback resources and stops every coroutine started by the store. */
+    /**
+     * Releases the native playback resources and stops every coroutine started by the store.
+     *
+     * The workspace is brought up to date first, and blocking here is the point: the process is
+     * about to end, and a save started on a scope that is cancelled a line later is a save that
+     * never happened.
+     */
     fun dispose() {
+        runBlocking { store.closeWorkspace() }
         store.release()
         applicationScope.cancel()
     }

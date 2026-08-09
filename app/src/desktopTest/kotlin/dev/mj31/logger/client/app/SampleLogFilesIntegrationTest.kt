@@ -6,7 +6,7 @@ import dev.mj31.logger.client.data.source.UuidIdGenerator
 import dev.mj31.logger.client.domain.format.compile.FormatCompilationResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlinx.datetime.TimeZone
 import java.io.File
 import kotlin.test.Test

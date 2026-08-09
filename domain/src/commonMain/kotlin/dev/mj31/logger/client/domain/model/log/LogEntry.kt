@@ -1,6 +1,6 @@
 package dev.mj31.logger.client.domain.model.log
 
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * A single normalized log record belonging to a [LogSource].

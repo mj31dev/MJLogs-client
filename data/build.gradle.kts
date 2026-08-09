@@ -25,6 +25,18 @@ fun nativesOf(dependency: Provider<MinimalExternalModuleDependency>): String =
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.room)
+}
+
+/**
+ * Room writes the schema of every version here, and reads them back to generate the migrations.
+ *
+ * The directory is committed on purpose: a migration is derived by comparing the new schema with the
+ * previous one, so a schema that only ever existed on one machine cannot be migrated away from.
+ */
+room {
+    schemaDirectory("$projectDir/schemas")
 }
 
 kotlin {
@@ -41,6 +53,11 @@ kotlin {
 
         val desktopMain by getting {
             dependencies {
+                // Room and its bundled SQLite. The driver is JVM only, which is why every persistent
+                // repository lives in this source set rather than in `commonMain`.
+                implementation(libs.room.runtime)
+                implementation(libs.sqlite.bundled)
+
                 // JavaCV declares every preset it can possibly wrap; only the FFmpeg one is wanted.
                 implementation(coordinateOf(dependency = libs.javacv)) { isTransitive = false }
                 implementation(libs.ffmpeg)
@@ -63,5 +80,16 @@ kotlin {
                 implementation(libs.truth)
             }
         }
+
+        val desktopTest by getting {
+            dependencies {
+                implementation(libs.room.testing)
+            }
+        }
     }
+}
+
+/** Room generates its implementations for the JVM target only; there is no other target to serve. */
+dependencies {
+    add("kspDesktop", libs.room.compiler)
 }

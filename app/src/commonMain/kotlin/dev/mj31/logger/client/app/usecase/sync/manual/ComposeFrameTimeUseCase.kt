@@ -1,6 +1,6 @@
 package dev.mj31.logger.client.app.usecase.sync.manual
 
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 

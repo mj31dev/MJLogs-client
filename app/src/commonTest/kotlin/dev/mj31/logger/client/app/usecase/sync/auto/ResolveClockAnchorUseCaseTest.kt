@@ -6,7 +6,7 @@ import dev.mj31.logger.client.domain.model.time.TimeRange
 import dev.mj31.logger.client.domain.sync.SyncOrigin
 import dev.mj31.logger.client.domain.sync.screen.ScreenClockReading
 import kotlin.test.Test
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.LocalTime
 
 /**

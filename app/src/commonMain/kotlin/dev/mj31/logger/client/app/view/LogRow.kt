@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.mj31.logger.client.app.theme.AccentActive
 import dev.mj31.logger.client.app.theme.AccentSync
-import dev.mj31.logger.client.app.theme.colorForLevel
+import dev.mj31.logger.client.app.theme.LocalLogLevelColors
 import dev.mj31.logger.client.domain.model.log.LogEntry
 import dev.mj31.logger.client.app.view.format.formatLogTime
 
@@ -49,7 +49,7 @@ fun LogRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val levelColor = colorForLevel(level = entry.level)
+    val levelColor = LocalLogLevelColors.current.of(level = entry.level)
     val background = when {
         isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = SELECTED_TINT_ALPHA)
         isActive -> AccentActive.copy(alpha = ACTIVE_TINT_ALPHA)

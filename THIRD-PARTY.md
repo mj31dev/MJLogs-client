@@ -9,7 +9,12 @@ It bundles the components below; their licenses are listed as declared by the ar
 |---|---|---|
 | Kotlin standard library, `kotlinx.coroutines`, `kotlinx.datetime` | Apache-2.0 | |
 | Compose Multiplatform, Skiko, AndroidX Lifecycle | Apache-2.0 | Skiko embeds Skia (BSD-3-Clause) |
+| AndroidX support libraries pulled in with the above (`annotation`, `arch.core`, `collection`, `savedstate`, `navigationevent`) | Apache-2.0 | Transitive; nobody chose them, they still ship |
+| JSpecify | Apache-2.0 | Nullness annotations, transitive |
 | kotlin-inject | Apache-2.0 | |
+| AndroidX Room (`androidx.room`) | Apache-2.0 | Stores the workspace and the saved sessions |
+| AndroidX SQLite with the bundled driver (`androidx.sqlite:sqlite-bundled`) | Apache-2.0 | Carries its own SQLite build, so no system library is needed |
+| SQLite | Public Domain | The engine inside that driver; its authors dedicated it to the public domain |
 | JavaCV, JavaCPP | Apache-2.0 | Triple licensed (Apache-2.0 / GPLv2 / GPLv2+CPE); Apache-2.0 is the option taken here |
 | Tesseract OCR 5.5.2 (`org.bytedeco:tesseract`) | Apache-2.0 | Reads the clock a screencast displays, entirely on the machine |
 | `eng.traineddata` (from `tessdata_best`) | Apache-2.0 | The recognition model, bundled so the feature needs no network |

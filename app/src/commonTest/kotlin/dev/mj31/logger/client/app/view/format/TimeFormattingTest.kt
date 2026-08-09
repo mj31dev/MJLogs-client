@@ -1,7 +1,7 @@
 package dev.mj31.logger.client.app.view.format
 
 import com.google.common.truth.Truth.assertThat
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
 import kotlin.test.Test
 
@@ -59,5 +59,27 @@ class TimeFormattingTest {
         val instant = Instant.parse("2024-01-05T10:23:45.123Z")
 
         assertThat(formatLogDateTime(instant = instant)).isEqualTo("2024-01-05 10:23:45.123")
+    }
+
+    /**
+     * When something was last opened is not a log timestamp and must not be printed like one.
+     *
+     * Reusing the record format put a millisecond tail on every row of the session list, which said
+     * nothing and read as noise beside the file name.
+     */
+    @Test
+    fun `a wall clock time stops at the minute`() {
+        val instant = Instant.parse("2024-01-05T10:23:45.123Z")
+
+        assertThat(formatWallClock(instant = instant, timeZone = TimeZone.UTC)).isEqualTo("2024-01-05 10:23")
+    }
+
+    /** Unlike a log timestamp, it belongs to the person reading it rather than to a file. */
+    @Test
+    fun `a wall clock time follows the zone it is asked for`() {
+        val instant = Instant.parse("2024-01-05T22:30:00Z")
+
+        assertThat(formatWallClock(instant = instant, timeZone = TimeZone.of(zoneId = "Europe/Moscow")))
+            .isEqualTo("2024-01-06 01:30")
     }
 }

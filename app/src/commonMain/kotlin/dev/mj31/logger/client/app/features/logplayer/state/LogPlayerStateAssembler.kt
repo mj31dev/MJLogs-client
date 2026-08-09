@@ -13,7 +13,7 @@ import dev.mj31.logger.client.app.features.logplayer.state.ui.LogSourceUi
 import dev.mj31.logger.client.app.features.logplayer.state.ui.VideoUiState
 import dev.mj31.logger.client.app.features.logplayer.state.ui.SyncUiState
 import dev.mj31.logger.client.app.usecase.sync.manual.ParseFrameTimeUseCase
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
@@ -87,6 +87,7 @@ class LogPlayerStateAssembler(
             autoSync = autoSyncStateOf(session = session, video = videoState, anchor = anchor, local = local),
             formatRequest = local.formatRequests.firstOrNull(),
             isImporting = local.isImporting,
+            workspace = local.workspace,
         )
     }
 

@@ -5,7 +5,7 @@ import dev.mj31.logger.client.domain.format.parse.LogLineParser
 import dev.mj31.logger.client.domain.format.parse.ParsedLine
 import dev.mj31.logger.client.domain.format.spec.LogFormatGroups
 import dev.mj31.logger.client.domain.model.log.LogLevel
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.LocalDate
 import dev.mj31.logger.client.data.format.line.CompiledLineFormat
 

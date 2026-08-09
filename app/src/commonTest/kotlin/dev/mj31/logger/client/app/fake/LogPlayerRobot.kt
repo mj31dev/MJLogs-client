@@ -40,6 +40,9 @@ import dev.mj31.logger.client.app.features.logplayer.state.LogPlayerStateAssembl
 import dev.mj31.logger.client.app.features.logplayer.state.LogPlayerState
 import dev.mj31.logger.client.app.fake.source.FixedIdGenerator
 import dev.mj31.logger.client.app.fake.source.FixedClock
+import dev.mj31.logger.client.app.fake.repository.testWorkspace
+import dev.mj31.logger.client.app.fake.repository.FakeSessionPackageStore
+import dev.mj31.logger.client.app.fake.repository.FakeWorkspaceRepository
 import dev.mj31.logger.client.app.fake.source.FakeTextFileDataSource
 import dev.mj31.logger.client.app.fake.format.FakeLogFormatCompiler
 import dev.mj31.logger.client.app.usecase.sync.manual.ParseFrameTimeUseCase
@@ -66,6 +69,8 @@ class LogPlayerRobot private constructor(
     val sessionRepository: InMemoryLogSessionRepository,
     val videoRepository: InMemoryVideoRepository,
     val syncRepository: InMemorySyncRepository,
+    val workspaceRepository: FakeWorkspaceRepository,
+    val packageStore: FakeSessionPackageStore,
 ) {
 
     /** Latest rendered snapshot, after every pending coroutine has run. */
@@ -176,7 +181,11 @@ class LogPlayerRobot private constructor(
         const val DEFAULT_TIMESTAMP_PATTERN: String = "epochMillis"
         const val DEFAULT_STRUCTURE_TEMPLATE: String = "{timestamp}|{level}|{tag}|{message}"
 
-        fun create(testScope: TestScope): LogPlayerRobot {
+        fun create(
+            testScope: TestScope,
+            workspaceRepository: FakeWorkspaceRepository = FakeWorkspaceRepository(),
+            packageStore: FakeSessionPackageStore = FakeSessionPackageStore(),
+        ): LogPlayerRobot {
             val dispatcher = UnconfinedTestDispatcher(scheduler = testScope.testScheduler)
             val scope = CoroutineScope(context = testScope.backgroundScope.coroutineContext + dispatcher)
 
@@ -213,6 +222,8 @@ class LogPlayerRobot private constructor(
                 ),
                 dispatcher = dispatcher,
                 scope = scope,
+                workspaceRepository = workspaceRepository,
+                packageStore = packageStore,
             )
 
             val recordedEffects = mutableListOf<LogPlayerEffect>()
@@ -231,9 +242,12 @@ class LogPlayerRobot private constructor(
                 sessionRepository = sessionRepository,
                 videoRepository = videoRepository,
                 syncRepository = syncRepository,
+                workspaceRepository = workspaceRepository,
+                packageStore = packageStore,
             )
         }
 
+        @Suppress("LongParameterList")
         private fun buildStore(
             loader: LogSourceLoader,
             detector: FakeLogFormatDetector,
@@ -242,6 +256,8 @@ class LogPlayerRobot private constructor(
             repositories: LogPlayerRepositories,
             dispatcher: CoroutineDispatcher,
             scope: CoroutineScope,
+            workspaceRepository: FakeWorkspaceRepository,
+            packageStore: FakeSessionPackageStore,
         ): LogPlayerStore {
             val parseFrameTime = ParseFrameTimeUseCase()
             return LogPlayerStore(
@@ -279,6 +295,13 @@ class LogPlayerRobot private constructor(
             scope = scope,
             defaultDispatcher = dispatcher,
             screenClockDispatcher = dispatcher,
+            workspace = testWorkspace(
+                repositories = repositories,
+                loader = loader,
+                clock = FixedClock(instant = LogPlayerFixtures.BASE),
+                workspaceRepository = workspaceRepository,
+                packageStore = packageStore,
+            ),
         )
         }
 

@@ -2,7 +2,7 @@ package dev.mj31.logger.client.app.fake.log
 
 import dev.mj31.logger.client.domain.format.spec.FormatOrigin
 import dev.mj31.logger.client.domain.format.spec.LogFormatSpec
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.time.Duration.Companion.milliseconds
 import dev.mj31.logger.client.domain.model.log.LogSource
 import dev.mj31.logger.client.domain.model.log.LogLevel

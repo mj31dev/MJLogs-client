@@ -1,0 +1,214 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "27fe61e080e31476b85cf4e7fcce0d9a",
+    "entities": [
+      {
+        "tableName": "last_workspace",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `videoPath` TEXT, `videoName` TEXT, `anchorLogTimestampMillis` INTEGER, `anchorVideoPositionMillis` INTEGER, `anchorOrigin` TEXT, `anchorLogEntryId` TEXT, `anchorAccuracyMillis` INTEGER, `filterQuery` TEXT NOT NULL, `filterLevels` TEXT NOT NULL, `filterSourceIds` TEXT NOT NULL, `timeWindowMillis` INTEGER, `followVideo` INTEGER NOT NULL, `videoPositionMillis` INTEGER NOT NULL, `packagePath` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "videoPath",
+            "columnName": "videoPath",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "videoName",
+            "columnName": "videoName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "anchorLogTimestampMillis",
+            "columnName": "anchorLogTimestampMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "anchorVideoPositionMillis",
+            "columnName": "anchorVideoPositionMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "anchorOrigin",
+            "columnName": "anchorOrigin",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "anchorLogEntryId",
+            "columnName": "anchorLogEntryId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "anchorAccuracyMillis",
+            "columnName": "anchorAccuracyMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "filterQuery",
+            "columnName": "filterQuery",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "filterLevels",
+            "columnName": "filterLevels",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "filterSourceIds",
+            "columnName": "filterSourceIds",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timeWindowMillis",
+            "columnName": "timeWindowMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "followVideo",
+            "columnName": "followVideo",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "videoPositionMillis",
+            "columnName": "videoPositionMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "packagePath",
+            "columnName": "packagePath",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "workspace_log_source",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `path` TEXT NOT NULL, `position` INTEGER NOT NULL, `formatName` TEXT NOT NULL, `formatLinePattern` TEXT NOT NULL, `formatTimestampPattern` TEXT NOT NULL, `formatFallbackLevel` TEXT NOT NULL, `formatUtcOffsetMinutes` INTEGER NOT NULL, `formatOrigin` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "path",
+            "columnName": "path",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "formatName",
+            "columnName": "formatName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "formatLinePattern",
+            "columnName": "formatLinePattern",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "formatTimestampPattern",
+            "columnName": "formatTimestampPattern",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "formatFallbackLevel",
+            "columnName": "formatFallbackLevel",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "formatUtcOffsetMinutes",
+            "columnName": "formatUtcOffsetMinutes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "formatOrigin",
+            "columnName": "formatOrigin",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "recent_package",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`path` TEXT NOT NULL, `name` TEXT NOT NULL, `kind` TEXT NOT NULL, `lastOpenedMillis` INTEGER NOT NULL, PRIMARY KEY(`path`))",
+        "fields": [
+          {
+            "fieldPath": "path",
+            "columnName": "path",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "kind",
+            "columnName": "kind",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastOpenedMillis",
+            "columnName": "lastOpenedMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "path"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '27fe61e080e31476b85cf4e7fcce0d9a')"
+    ]
+  }
+}

@@ -1,6 +1,6 @@
 package dev.mj31.logger.client.app.view.format
 
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
@@ -47,6 +47,20 @@ fun formatLogDateTime(instant: Instant, timeZone: TimeZone = TimeZone.UTC): Stri
     val time = instant.toLocalDateTime(timeZone = timeZone)
     return "${time.year}-${time.monthNumber.pad(length = PAD_TWO)}-${time.dayOfMonth.pad(length = PAD_TWO)} " +
         formatLogTime(instant = instant, timeZone = timeZone)
+}
+
+/**
+ * Formats when something was last touched, as `yyyy-MM-dd HH:mm` in the local zone.
+ *
+ * Deliberately unlike [formatLogDateTime] in both respects. A log timestamp is content: it is shown
+ * in UTC and to the millisecond because that is what the file says and because a millisecond is the
+ * difference between two records. When a session was last opened is neither — it is a wall clock
+ * fact about the person reading it, and no one has ever needed it to the millisecond.
+ */
+fun formatWallClock(instant: Instant, timeZone: TimeZone = TimeZone.currentSystemDefault()): String {
+    val time = instant.toLocalDateTime(timeZone = timeZone)
+    return "${time.year}-${time.monthNumber.pad(length = PAD_TWO)}-${time.dayOfMonth.pad(length = PAD_TWO)} " +
+        "${time.hour.pad(length = PAD_TWO)}:${time.minute.pad(length = PAD_TWO)}"
 }
 
 /**

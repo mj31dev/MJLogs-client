@@ -9,7 +9,7 @@ import dev.mj31.logger.client.domain.model.time.TimeRange
 import dev.mj31.logger.client.domain.sync.SyncOrigin
 import kotlin.test.Test
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * When the file's own account of itself is worth believing.

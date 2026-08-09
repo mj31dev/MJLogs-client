@@ -78,12 +78,51 @@ frame shows, and finding it automatically all end in a single `SyncAnchor`, whic
 `app/usecase/sync/auto/{metadata,screen,zone}/`. Nothing downstream of the anchor knows or cares
 which produced it.
 
+**A workspace is described, never copied.** What survives a restart is a `WorkspaceSnapshot` — file
+paths, the format each was read under, the anchor, the filter, the playhead — and never the parsed
+`LogEntry` values. Files on disk are the source of truth and are read again on restore, so a log that
+grew since the last visit comes back whole. Room lives in `data/…/workspace/` (JVM only, hence
+`desktopMain`), and the same schema serves two databases: the application's own store and the one
+inside a saved session file.
+
+**One session format, written only when asked.** `.mjclog` bundles copies of the logs and the
+screencast, so it is self-contained and can be handed to anyone. No archive can grow one entry in
+place, so rewriting it copies every byte: it is written on an explicit save, on closing the session
+and on leaving the application, and the window carries a marker while it is behind. There used to be
+a second, reference-only format that was rewritten on every change; it made "saved" mean two
+different things and produced files that silently stopped working when a log moved. The application
+store is the live carrier regardless, so a crash loses nothing — everything reaches it the moment it
+changes, except the playhead, which is written on a timer.
+
+**Design is written down.** `.claude/skills/design-system/SKILL.md` holds the spacing steps, the
+type roles, the three surface levels, the action hierarchy, the density rule and the motion table;
+the tokens themselves live in `app/theme/`. A screen never writes a raw `dp` for spacing or a literal
+`Color`. Two rules there are load-bearing rather than stylistic: depth is a change of surface colour
+and never a shadow, because a shadow over a video frame reads as a rendering artefact; and content
+never animates — a list of ten thousand rows that animates stutters, and a frame that cross-fades
+cannot be trusted as evidence. The scheme comes in light and dark, chosen in `View` and stored in the
+application store, and the severity palette is part of it: the greens and ambers that read on
+`#0B1120` are invisible on white, so `LocalLogLevelColors` carries a set per scheme.
+
 ## Agents, skills, commands
 
-`.claude/agents/` holds three analysts — `architect`, `code-reviewer`, `test-engineer`; the first two
-are read-only, the third may write inside test directories. `.claude/skills/` holds `feature`
-(invoked explicitly as `/feature`; it runs reconnaissance, then grilling, then a layered checklist),
-`log-format-pipeline`, `compose-ui-testing` and `mvi-logplayer`, which load themselves when relevant.
-`.claude/commands/` holds `/review` and `/verify-ui`.
+`.claude/agents/` holds four: `architect`, `code-reviewer` and `test-engineer` — the first two
+read-only, the third writing inside test directories — and `designer`, which both designs and
+implements how a screen looks and writes inside `:app`. Its write access is wide and its rules are
+narrow: the MVI cycle, the use cases, `:domain`, `:data`, behavioural assertions and the
+layout-stability tests are off limits, and a design that needs a new state field is reported rather
+than made. It renders what it builds and looks at it, in both schemes, because reasoning about
+layout has already failed here twice past a green suite.
 
-Commits and pushes are denied to Claude Code in `.claude/settings.json`: the user creates them.
+`.claude/skills/` holds `feature` (invoked explicitly as `/feature`; reconnaissance, grilling,
+design, then a layered checklist) and `release` (the gate, the legal checks, version consistency,
+the artifact, then the notes), plus `design-system`, `log-format-pipeline`, `compose-ui-testing` and
+`mvi-logplayer`, which load themselves when relevant. `.claude/commands/` holds `/review` and
+`/verify-ui`.
+
+Claude Code is sandboxed to this repository in `.claude/settings.json`: ordinary local work runs
+without permission prompts, while commit-producing commands and all Git remote operations are
+denied. The user creates commits and handles remotes. Gradle Wrapper and JVM commands are explicit
+sandbox exceptions because JVM networking is incompatible with the macOS sandbox proxy. Gradle may
+read and write the user's `~/.gradle` cache; Kotlin/Native keeps its home in an ignored directory
+inside this repository.

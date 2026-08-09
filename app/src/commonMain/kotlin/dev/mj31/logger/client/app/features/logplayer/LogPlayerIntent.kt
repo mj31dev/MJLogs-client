@@ -92,4 +92,32 @@ sealed interface LogPlayerIntent {
 
     data object CancelAutoSync : LogPlayerIntent
 
+    /**
+     * Everything that treats the workspace as a file rather than as something to look at.
+     *
+     * Grouped so that the store can hand the whole family to the one collaborator that knows about
+     * persistence, instead of listing six more cases beside the playback ones.
+     */
+    sealed interface Workspace : LogPlayerIntent
+
+    /** Empties the workspace; the session file it belonged to is written and let go, not abandoned. */
+    data object StartNewSession : Workspace
+
+    /** Reopens the workspace that was on screen when the application was last closed. */
+    data object ContinueLastSession : Workspace
+
+    /** Asks where to write a new session file; answered with [LogPlayerEffect.PickSessionSaveTarget]. */
+    data object RequestSaveSession : Workspace
+
+    data class SaveSession(val path: String) : Workspace
+
+    /** Brings the package the workspace already belongs to up to date with what is on screen. */
+    data object SaveSessionChanges : Workspace
+
+    data object CancelSessionSave : Workspace
+
+    /** Asks for a session file to open; answered with [LogPlayerEffect.PickSessionFile]. */
+    data object RequestOpenSession : Workspace
+
+    data class OpenSession(val path: String) : Workspace
 }

@@ -4,7 +4,7 @@ import dev.mj31.logger.client.domain.format.spec.LogFormatSpec
 import dev.mj31.logger.client.domain.source.IdGenerator
 import dev.mj31.logger.client.domain.source.TextFileContent
 import dev.mj31.logger.client.domain.source.TextFileDataSource
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 import dev.mj31.logger.client.domain.model.log.LogSource

@@ -25,4 +25,10 @@ sealed interface LogPlayerEffect {
 
     /** The platform layer has to open its native log file picker. */
     data object PickLogFiles : LogPlayerEffect
+
+    /** The platform layer has to ask where a session file of [kind] should be written. */
+    data object PickSessionSaveTarget : LogPlayerEffect
+
+    /** The platform layer has to open its native picker for saved session files. */
+    data object PickSessionFile : LogPlayerEffect
 }

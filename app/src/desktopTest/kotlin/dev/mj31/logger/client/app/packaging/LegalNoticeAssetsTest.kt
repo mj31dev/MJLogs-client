@@ -1,4 +1,4 @@
-package dev.mj31.logger.client.app
+package dev.mj31.logger.client.app.packaging
 
 import com.google.common.truth.Truth.assertThat
 import java.io.File

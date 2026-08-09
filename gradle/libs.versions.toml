@@ -1,18 +1,23 @@
 [versions]
-kotlin = "2.0.20"
-compose-multiplatform = "1.6.11"
-detekt = "2.0.0-alpha.5"
+kotlin = "2.3.21"
+compose-multiplatform = "1.11.1"
+detekt = "2.0.0-alpha.6"
 detekt-formatting = "1.23.8"
-coroutines = "1.8.1"
-kotlinx-datetime = "0.6.0"
-truth = "1.4.4"
+coroutines = "1.11.0"
+# 0.7 moved `Instant` and `Clock` into the standard library as `kotlin.time`; the old names remain
+# only as deprecated typealiases, so compile and runtime classpaths have to agree on this version.
+kotlinx-datetime = "0.8.0"
+truth = "1.4.5"
 javacv = "1.5.13"
 javacpp = "1.5.13"
 ffmpeg = "8.0.1-1.5.13"
 tesseract = "5.5.2-1.5.13"
 leptonica = "1.87.0-1.5.13"
-ksp = "2.0.20-1.0.25"
-kotlin-inject = "0.7.2"
+# KSP moved to its own version line with Kotlin 2.3: `2.3.x` is the KSP release, not the Kotlin one.
+ksp = "2.3.11"
+kotlin-inject = "0.9.0"
+room = "2.8.4"
+sqlite = "2.7.0"
 
 [libraries]
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
@@ -29,6 +34,12 @@ tesseract = { module = "org.bytedeco:tesseract", version.ref = "tesseract" }
 leptonica = { module = "org.bytedeco:leptonica", version.ref = "leptonica" }
 kotlin-inject-runtime = { module = "me.tatarka.inject:kotlin-inject-runtime-kmp", version.ref = "kotlin-inject" }
 kotlin-inject-compiler = { module = "me.tatarka.inject:kotlin-inject-compiler-ksp", version.ref = "kotlin-inject" }
+room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+# Drives a real database through every migration, using the schemas exported into `data/schemas`.
+room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
+# The bundled driver carries its own SQLite build, so the packaged application needs no system library.
+sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
 
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
@@ -36,3 +47,4 @@ compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "compose-m
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 detekt = { id = "dev.detekt", version.ref = "detekt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+room = { id = "androidx.room", version.ref = "room" }

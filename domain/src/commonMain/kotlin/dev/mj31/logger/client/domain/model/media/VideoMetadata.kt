@@ -1,6 +1,6 @@
 package dev.mj31.logger.client.domain.model.media
 
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * What the container itself says about a screencast, read without playing it.

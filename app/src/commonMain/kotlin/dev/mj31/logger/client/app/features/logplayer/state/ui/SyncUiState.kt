@@ -2,7 +2,7 @@ package dev.mj31.logger.client.app.features.logplayer.state.ui
 
 import dev.mj31.logger.client.app.usecase.timeline.TimelineOverlap
 import dev.mj31.logger.client.domain.sync.SyncOrigin
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /** Presentation model of the synchronization state, however the anchor was arrived at. */
 data class SyncUiState(

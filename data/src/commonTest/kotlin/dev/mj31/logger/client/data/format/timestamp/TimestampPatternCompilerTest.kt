@@ -1,7 +1,7 @@
 package dev.mj31.logger.client.data.format.timestamp
 
 import com.google.common.truth.Truth.assertThat
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertFailsWith

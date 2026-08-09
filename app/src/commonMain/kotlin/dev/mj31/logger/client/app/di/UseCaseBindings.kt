@@ -11,7 +11,7 @@ import dev.mj31.logger.client.domain.repository.LegalNoticeRepository
 import dev.mj31.logger.client.domain.format.parse.LogLineParserFactory
 import dev.mj31.logger.client.domain.source.IdGenerator
 import dev.mj31.logger.client.domain.source.TextFileDataSource
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlinx.datetime.TimeZone
 import me.tatarka.inject.annotations.Provides
 

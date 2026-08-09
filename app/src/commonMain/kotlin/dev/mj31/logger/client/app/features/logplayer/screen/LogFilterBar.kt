@@ -33,7 +33,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.mj31.logger.client.app.theme.colorForLevel
+import dev.mj31.logger.client.app.theme.LocalLogLevelColors
 import dev.mj31.logger.client.app.features.logplayer.LogPlayerIntent
 import dev.mj31.logger.client.domain.model.log.LogLevel
 import dev.mj31.logger.client.domain.model.log.LogFilter
@@ -145,7 +145,7 @@ internal fun toggleLevel(current: Set<LogLevel>, toggled: LogLevel): Set<LogLeve
 
 @Composable
 private fun LevelChip(level: LogLevel, isSelected: Boolean, onClick: () -> Unit) {
-    val color = colorForLevel(level = level)
+    val color = LocalLogLevelColors.current.of(level = level)
     Box(
         modifier = Modifier
             .clip(shape = RoundedCornerShape(size = 4.dp))

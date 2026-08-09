@@ -7,7 +7,6 @@ plugins {
 
 kotlin {
     jvm("desktop") {
-        withJava()
         mainRun {
             mainClass = "dev.mj31.logger.client.app.MainKt"
         }
@@ -173,6 +172,104 @@ tasks.withType<org.jetbrains.compose.desktop.application.tasks.AbstractJPackageT
         )
     }
 
+/** Must match `SessionFile.EXTENSION`; the build cannot read a Kotlin constant it is compiling. */
+val sessionExtension = "mjclog"
+val sessionTypeName = "MJLogs session"
+
+/**
+ * Teaches the operating system that the session extension belongs to this application.
+ *
+ * jpackage takes one properties file per association and no list, so the file is generated rather
+ * than committed: its content is the extension plus a description, both of which already exist in
+ * the code that defines the format.
+ *
+ * The directory is emptied first. It is an output that is written into rather than replaced, so
+ * without this the descriptors of extensions that no longer exist keep being handed to jpackage —
+ * which is exactly what happened when the two older formats were dropped.
+ *
+ * This only ever affects an *installed* application. Running from Gradle leaves no registration
+ * behind, so double-clicking a session file is the one thing that cannot be checked before building
+ * an installer.
+ */
+val sessionFileAssociations = tasks.register("generateSessionFileAssociations") {
+    description = "Writes the jpackage descriptor that associates the session extension."
+    group = "distribution"
+
+    val outputDirectory = layout.buildDirectory.dir("associations")
+    outputs.dir(outputDirectory)
+
+    doLast {
+        val directory = outputDirectory.get().asFile
+        directory.deleteRecursively()
+        directory.mkdirs()
+        listOf(
+            sessionExtension to sessionTypeName,
+        ).forEach { (extension, description) ->
+            directory.resolve("$extension.properties").writeText(
+                """
+                extension=$extension
+                mime-type=application/x-$extension
+                description=$description
+                """.trimIndent(),
+            )
+        }
+    }
+}
+
+/**
+ * Windows and Linux only, and that is not an oversight.
+ *
+ * There, jpackage builds the package itself and honours `--file-associations`. On macOS it does not:
+ * Compose produces the `.app` in a separate app-image step, and jpackage writes
+ * `CFBundleDocumentTypes` only when it is building an installer from scratch — so the option is
+ * accepted, ignored, and the bundle ships without a single document type. That was checked by
+ * reading the generated `Info.plist`, not assumed. macOS is handled below, in the plist itself.
+ */
+if (!isMacOsHost) {
+    tasks.withType<org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask>().configureEach {
+        dependsOn(sessionFileAssociations)
+        val associations = layout.buildDirectory.dir("associations")
+        freeArgs.addAll(
+            provider {
+                associations.get().asFile
+                    .listFiles { file -> file.extension == "properties" }
+                    .orEmpty()
+                    .sortedBy { it.name }
+                    .flatMap { listOf("--file-associations", it.absolutePath) }
+            },
+        )
+    }
+}
+
+/**
+ * The document type macOS actually reads, written straight into the bundle.
+ *
+ * `LSHandlerRank = Owner` says this application defines the format rather than merely being able to
+ * open it, which is what makes it the default handler instead of a candidate among several.
+ *
+ * Registration still needs the application to sit somewhere LaunchServices scans and to have been
+ * launched once: mounting the disk image is not enough, and neither is copying without opening.
+ */
+val macDocumentTypes = """
+    <key>CFBundleDocumentTypes</key>
+    <array>
+      <dict>
+        <key>CFBundleTypeName</key>
+        <string>$sessionTypeName</string>
+        <key>CFBundleTypeExtensions</key>
+        <array>
+          <string>$sessionExtension</string>
+        </array>
+        <key>CFBundleTypeRole</key>
+        <string>Editor</string>
+        <key>LSHandlerRank</key>
+        <string>Owner</string>
+        <key>CFBundleTypeIconFile</key>
+        <string>$appPackageName.icns</string>
+      </dict>
+    </array>
+""".trimIndent()
+
 /**
  * Publishes the installer under the full product version.
  *
@@ -231,6 +328,9 @@ compose.desktop {
             macOS {
                 bundleID = "dev.mj31.logger.client"
                 iconFile.set(project.file("icons/icon.icns"))
+                infoPlist {
+                    extraKeysRawXml = macDocumentTypes
+                }
             }
 
             windows {

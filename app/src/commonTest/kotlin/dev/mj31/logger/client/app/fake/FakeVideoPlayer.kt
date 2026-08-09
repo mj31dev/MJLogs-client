@@ -46,9 +46,19 @@ class FakeVideoPlayer : VideoPlayer {
     var releaseCallCount: Int = 0
         private set
 
+    var closeCallCount: Int = 0
+        private set
+
     override fun open(media: VideoMedia) {
         mutableOpenedMedia += media
         playbackState.update { it.copy(status = PlaybackStatus.READY, errorMessage = null) }
+    }
+
+    /** Recorded rather than ignored: emptying the workspace has to let the screencast go. */
+    override fun close() {
+        closeCallCount++
+        mutableOpenedMedia.clear()
+        playbackState.value = PlaybackState.IDLE
     }
 
     override fun play() {

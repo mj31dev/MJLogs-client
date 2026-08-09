@@ -1,6 +1,20 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "enabledPlugins": {
+    "gitkraken-hooks@gitkraken": false
+  },
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/restrict-git.sh"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
@@ -13,52 +27,102 @@
     ]
   },
   "permissions": {
-    "defaultMode": "acceptEdits",
+    "defaultMode": "dontAsk",
     "allow": [
-      "Bash(./gradlew detekt*)",
-      "Bash(./gradlew test*)",
-      "Bash(./gradlew verifySourceLayout*)",
-      "Bash(./gradlew :domain:desktopTest*)",
-      "Bash(./gradlew :data:desktopTest*)",
-      "Bash(./gradlew :app:desktopTest*)",
-      "Bash(./gradlew :app:desktopRun*)",
-      "Bash(./gradlew tasks*)",
-      "Bash(git status*)",
-      "Bash(git diff*)",
-      "Bash(git log*)",
-      "Bash(git show*)"
-    ],
-    "ask": [
-      "Bash(*git checkout*)",
-      "Bash(*git switch*)",
-      "Bash(*git restore*)",
-      "Bash(*git merge*)",
-      "Bash(*git cherry-pick*)",
-      "Bash(*git branch -D*)",
-      "Bash(*git branch -d*)",
-      "Bash(*curl * -X POST*)",
-      "Bash(*curl * --data*)",
-      "Bash(*curl * -d *)",
-      "Bash(*chmod 777*)"
+      "Bash",
+      "Read(/**)",
+      "Edit(/**)",
+      "Write(/**)"
     ],
     "deny": [
-      "Bash(*git commit*)",
-      "Bash(*git push*)",
-      "Bash(*git stash*)",
-      "Bash(*git reset*)",
-      "Bash(*git rebase*)",
-      "Bash(*git clean*)",
-      "Bash(*rm -rf .git*)",
-      "Bash(*rm -rf /*)",
-      "Bash(*rm -rf ~/*)",
-      "Bash(*rm -rf ../*)",
-      "Bash(* ~/.ssh*)",
-      "Bash(* ~/.aws*)",
-      "Bash(*sudo*)",
-      "Bash(*su *)",
-      "Bash(*killall*)",
-      "Bash(*python*)",
-      "Bash(*python3*)"
+      "Read(/.env)",
+      "Read(/.env.*)",
+      "Read(/*.env)",
+      "Read(/*.env.*)",
+      "Bash(git commit *)",
+      "Bash(git commit-tree *)",
+      "Bash(git merge *)",
+      "Bash(git rebase *)",
+      "Bash(git cherry-pick *)",
+      "Bash(git revert *)",
+      "Bash(git am *)",
+      "Bash(git stash *)",
+      "Bash(git notes *)",
+      "Bash(git fast-import *)",
+      "Bash(git filter-branch *)",
+      "Bash(git push *)",
+      "Bash(git fetch *)",
+      "Bash(git pull *)",
+      "Bash(git clone *)",
+      "Bash(git ls-remote *)",
+      "Bash(git remote *)",
+      "Bash(git submodule *)",
+      "Bash(git maintenance *)",
+      "Bash(git scalar *)",
+      "Bash(git lfs *)",
+      "Bash(git send-pack *)",
+      "Bash(git receive-pack *)",
+      "Bash(git upload-pack *)",
+      "Bash(git daemon *)",
+      "Bash(git p4 *)",
+      "Bash(git svn *)",
+      "Bash(sudo *)"
     ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "allowUnsandboxedCommands": false,
+    "excludedCommands": [
+      "gradlew",
+      "gradlew *",
+      "./gradlew",
+      "./gradlew *",
+      "java",
+      "java *",
+      "/usr/bin/java",
+      "/usr/bin/java *",
+      "*/bin/java",
+      "*/bin/java *"
+    ],
+    "failIfUnavailable": true,
+    "filesystem": {
+      "allowWrite": [
+        "/Users/mj/.gradle"
+      ],
+      "denyRead": [
+        "/Users",
+        "/Volumes",
+        "./.env",
+        "./.env.*",
+        "./*.env",
+        "./*.env.*"
+      ],
+      "allowRead": [
+        ".",
+        "/Users/mj/.gradle",
+        "/Users/mj/Library/Java/JavaVirtualMachines"
+      ]
+    },
+    "network": {
+      "allowedDomains": [
+        "services.gradle.org",
+        "downloads.gradle.org",
+        "plugins.gradle.org",
+        "plugins-artifacts.gradle.org",
+        "repo.maven.apache.org",
+        "repo1.maven.org",
+        "dl.google.com",
+        "maven.google.com",
+        "github.com",
+        "objects.githubusercontent.com",
+        "release-assets.githubusercontent.com"
+      ]
+    }
+  },
+  "env": {
+    "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "1",
+    "CLAUDE_CODE_TMPDIR": ".claude-tmp",
+    "KONAN_DATA_DIR": ".konan"
   }
 }

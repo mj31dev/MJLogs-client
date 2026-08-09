@@ -1,7 +1,7 @@
 package dev.mj31.logger.client.domain.format.parse
 
 import dev.mj31.logger.client.domain.model.log.LogLevel
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import dev.mj31.logger.client.domain.format.spec.LogFormatSpec
 
 /** Result of interpreting a single physical line of a log file. */

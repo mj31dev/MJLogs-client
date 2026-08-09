@@ -5,7 +5,7 @@ description: The pipeline for building a new feature in the MJLogs client, from 
 
 # Building a feature
 
-Four stages, in order. Do not start writing production code before stage 3.
+Five stages, in order. Do not start writing production code before stage 4.
 
 ## 1. Reconnaissance — always first
 
@@ -32,7 +32,21 @@ ignorance mostly reconstruct facts you could have read.
 
 Grill until the frontier is empty, then get the user's confirmation of the shared understanding.
 
-## 3. Implementation, bottom-up
+## 3. Design — whenever the work touches a screen
+
+Skip this stage explicitly when the work adds no screen and changes none: a parser, a repository, a
+migration. Say that you are skipping it and why.
+
+Otherwise, hand the screen to the `designer` agent before writing it. Give it what grilling settled —
+what the screen is for, what it holds, which action is the one it exists for — and let it come back
+with the layout and the diffs. It reads `.claude/skills/design-system/SKILL.md`, renders what it
+builds in both schemes, and looks at it.
+
+Two things come back to you rather than to it: a design that needs a new field on the state, and any
+rule of the design system it found itself fighting. The first is an MVI change and belongs in stage
+4; the second is worth more than the screen it came up on, and the system is what gets fixed.
+
+## 4. Implementation, bottom-up
 
 Work the layers in this order. Each step is complete before the next begins — a screen written
 against a use case that does not exist yet is a screen written against a guess.
@@ -58,7 +72,7 @@ Throughout: named arguments for every call with two or more parameters; one decl
 at most 5 Kotlin files per directory — when a package fills up, split it by meaning and say which
 meaning.
 
-## 4. Tests and the gate
+## 5. Tests and the gate
 
 Tests are mandatory; the order in which you write them is yours to choose. Domain and use-case logic
 goes in `src/commonTest` with Google Truth; screen behaviour goes in `src/desktopTest` with
