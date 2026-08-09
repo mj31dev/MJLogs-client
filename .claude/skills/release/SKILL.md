@@ -124,7 +124,17 @@ pre-releases of one version would otherwise produce the same artifact name.
 ./gradlew :app:dmg --console=plain
 ```
 
-Then check what actually shipped, rather than what the build script intended:
+This is the one step that cannot be run unattended: the disk image is arranged by an AppleScript, and
+macOS asks whether the build may control Finder the first time. A refusal fails the task with a
+message saying so — it does not quietly ship an unarranged image.
+
+Then check what actually shipped, rather than what the build script intended. Mount the image and
+look at it in both system appearances, because the icon captions are drawn by Finder in a colour the
+artwork cannot follow:
+
+```bash
+open app/build/distributions/MJLogs-<version>.dmg
+```
 
 ```bash
 ls -lh app/build/distributions/

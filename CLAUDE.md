@@ -94,6 +94,19 @@ different things and produced files that silently stopped working when a log mov
 store is the live carrier regardless, so a crash loses nothing — everything reaches it the moment it
 changes, except the playhead, which is written on a timer.
 
+**The disk image is drawn, not defaulted.** `:app:dmg` calls jpackage directly instead of going
+through Compose's `packageDmg`, because Compose passes `--resource-dir` pointing at a directory it
+wipes inside its own task action, and of two such options jpackage keeps the last — so the artwork
+cannot be handed to it any other way. The three files that decide how the image looks are staged
+under the names jpackage looks for: `MJLogs-background.tiff`, `MJLogs-volume.icns`,
+`MJLogs-dmg-setup.scpt`. The background and the script share one grid, written down in
+`app/dmg/README.md`; Finder never scales a background picture, so a drawing that does not match the
+window is simply wrong rather than adjustable. The captions under the icons are drawn by Finder in
+black in both system appearances and there is no property anywhere that changes that colour, which is
+what the plates in the picture are for. The arranging step is an AppleScript and needs permission to
+control Finder; refused, jpackage writes an unarranged image and exits zero, so the build checks its
+log and fails instead.
+
 **Design is written down.** `.claude/skills/design-system/SKILL.md` holds the spacing steps, the
 type roles, the three surface levels, the action hierarchy, the density rule and the motion table;
 the tokens themselves live in `app/theme/`. A screen never writes a raw `dp` for spacing or a literal

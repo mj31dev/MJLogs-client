@@ -80,7 +80,9 @@ Other components  —  Apache License 2.0
 Kotlin standard library, kotlinx.coroutines, kotlinx.datetime, Compose Multiplatform, Skiko
 (which embeds Skia, BSD-3-Clause), AndroidX Lifecycle, AndroidX Room, AndroidX SQLite, the AndroidX
 support libraries pulled in with them (annotation, arch.core, collection, savedstate,
-navigationevent), JSpecify, kotlin-inject, JavaCV and JavaCPP.
+navigationevent), JetBrains Annotations (org.jetbrains:annotations) and the JetBrains Runtime API
+(org.jetbrains.runtime:jbr-api), both pulled in with Kotlin and Compose, JSpecify, kotlin-inject,
+JavaCV and JavaCPP.
 
 JavaCV and JavaCPP are offered by their authors under Apache-2.0, GPLv2 or GPLv2-with-Classpath-
 Exception; this application takes them under the Apache License 2.0.
