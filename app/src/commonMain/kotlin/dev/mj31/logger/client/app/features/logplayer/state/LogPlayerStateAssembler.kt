@@ -87,6 +87,7 @@ class LogPlayerStateAssembler(
             autoSync = autoSyncStateOf(session = session, video = videoState, anchor = anchor, local = local),
             formatRequest = local.formatRequests.firstOrNull(),
             isImporting = local.isImporting,
+            workspace = local.workspace,
         )
     }
 

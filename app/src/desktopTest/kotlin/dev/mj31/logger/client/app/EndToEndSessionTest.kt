@@ -4,6 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import dev.mj31.logger.client.app.fake.FakeVideoPlayer
 import dev.mj31.logger.client.app.features.logplayer.dependencies.LogPlayerFormatTools
 import dev.mj31.logger.client.app.features.logplayer.LogPlayerIntent
+import dev.mj31.logger.client.app.fake.repository.testWorkspace
 import dev.mj31.logger.client.app.features.logplayer.dependencies.LogPlayerRepositories
 import dev.mj31.logger.client.app.features.logplayer.dependencies.LogPlayerUseCases
 import dev.mj31.logger.client.app.features.logplayer.LogPlayerStore
@@ -210,13 +211,14 @@ class EndToEndSessionTest {
             timeZone = TimeZone.UTC,
         )
         val syncRepository = InMemorySyncRepository()
+        val repositories = LogPlayerRepositories(
+            session = InMemoryLogSessionRepository(),
+            video = InMemoryVideoRepository(),
+            sync = syncRepository,
+        )
         val parseFrameTime = ParseFrameTimeUseCase()
         return LogPlayerStore(
-            repositories = LogPlayerRepositories(
-                session = InMemoryLogSessionRepository(),
-                video = InMemoryVideoRepository(),
-                sync = syncRepository,
-            ),
+            repositories = repositories,
             useCases = LogPlayerUseCases(
                 mergeLogSources = MergeLogSourcesUseCase(),
                 importLogFile = ImportLogFileUseCase(
@@ -250,6 +252,11 @@ class EndToEndSessionTest {
             scope = CoroutineScope(context = testScope.backgroundScope.coroutineContext + dispatcher),
             defaultDispatcher = dispatcher,
             screenClockDispatcher = dispatcher,
+            workspace = testWorkspace(
+                repositories = repositories,
+                loader = loader,
+                clock = Clock.System,
+            ),
         )
     }
 

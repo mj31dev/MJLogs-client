@@ -17,6 +17,14 @@ interface VideoPlayer {
 
     fun open(media: VideoMedia)
 
+    /**
+     * Lets go of whatever is open, leaving the player ready for the next file.
+     *
+     * Not the same as [release], which ends the player's life: a workspace can be emptied and filled
+     * again many times over one run of the application.
+     */
+    fun close()
+
     fun play()
 
     fun pause()

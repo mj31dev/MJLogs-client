@@ -56,6 +56,7 @@
     <string name="log_record_count">%1$s records</string>
     <string name="log_record_count_filtered">%1$s of %2$s records</string>
     <string name="log_add_files">Add logs…</string>
+    <string name="log_jump_to_playhead">Jump to playhead</string>
     <string name="log_empty_title">No log files loaded</string>
     <string name="log_empty_description">Add one or more .txt files. Their formats are detected automatically and every file is merged into a single chronological session.</string>
     <string name="log_no_match_title">No record matches the filters</string>
@@ -131,4 +132,45 @@
     <!-- Format preview -->
     <string name="preview_unavailable">No preview while the format is invalid</string>
     <string name="preview_matched_lines">%1$s of %2$s sample lines become records</string>
+
+    <!-- Saved sessions -->
+    <string name="view_menu">View</string>
+    <string name="view_theme_system">Match the system</string>
+    <string name="view_theme_light">Light</string>
+    <string name="view_theme_dark">Dark</string>
+
+    <string name="session_menu">Session</string>
+    <string name="session_menu_new">New session</string>
+    <string name="session_menu_open">Open session…</string>
+    <string name="session_menu_recent">Recent sessions</string>
+    <string name="session_menu_all">All sessions…</string>
+    <string name="session_menu_save">Save session</string>
+    <string name="session_menu_save_as">Save session as…</string>
+    <string name="session_save_progress_title">Saving session</string>
+    <string name="session_save_progress_file">Copying %1$s</string>
+    <string name="session_save_cancel">Cancel</string>
+    <string name="session_unsaved_marker">•</string>
+    <string name="message_session_saved">Session saved</string>
+    <string name="message_session_save_failed">The session could not be saved</string>
+    <string name="message_session_save_cancelled">Saving cancelled; the unfinished file was removed</string>
+    <string name="message_session_opened">Opened %1$s</string>
+    <string name="message_session_missing_files">These files are no longer where they were: %1$s</string>
+
+    <!-- Session list -->
+    <string name="sessions_title">Sessions</string>
+    <string name="sessions_recent">Recently opened</string>
+    <string name="sessions_empty">No session files have been opened yet</string>
+    <string name="sessions_open_file">Open a session file…</string>
+    <string name="sessions_forget">Remove</string>
+    <string name="sessions_new">New session</string>
+    <string name="sessions_continue">Continue where you left off</string>
+    <string name="sessions_last_with_video">with screencast</string>
+    <string name="sessions_menu_recent_empty">No recent sessions</string>
+    <string name="sessions_close">Close</string>
+
+    <!-- A workspace of one file is the common case, so "1 log file(s)" would be on screen daily. -->
+    <plurals name="sessions_last_summary">
+        <item quantity="one">%1$d log file</item>
+        <item quantity="other">%1$d log files</item>
+    </plurals>
 </resources>

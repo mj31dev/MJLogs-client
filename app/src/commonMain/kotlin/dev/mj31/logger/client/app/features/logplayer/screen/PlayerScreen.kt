@@ -33,6 +33,7 @@ import dev.mj31.logger.client.app.view.MessageBar
 import dev.mj31.logger.client.app.view.UiMessage
 import dev.mj31.logger.client.app.features.logplayer.state.LogPlayerState
 import dev.mj31.logger.client.app.features.logplayer.format.FormatWizardDialog
+import dev.mj31.logger.client.app.features.logplayer.session.SessionSaveBar
 
 /**
  * Screencast on the left, merged log session on the right, synchronization controls at the bottom.
@@ -69,6 +70,14 @@ fun PlayerScreen(
                     modifier = Modifier
                         .align(alignment = Alignment.TopCenter)
                         .fillMaxWidth(),
+                )
+            }
+
+            state.workspace.save?.let { save ->
+                SessionSaveBar(
+                    save = save,
+                    onCancel = { onIntent(LogPlayerIntent.CancelSessionSave) },
+                    modifier = Modifier.align(alignment = Alignment.TopCenter),
                 )
             }
 

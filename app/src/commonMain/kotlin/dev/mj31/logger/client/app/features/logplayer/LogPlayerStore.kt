@@ -1,8 +1,7 @@
 package dev.mj31.logger.client.app.features.logplayer
 
-import dev.mj31.logger.client.app.features.logplayer.state.format.FormatDefaults
+import dev.mj31.logger.client.app.features.logplayer.format.FormatRequestHandler
 import dev.mj31.logger.client.app.features.logplayer.state.format.FormatError
-import dev.mj31.logger.client.app.features.logplayer.state.format.FormatRequestUiState
 import dev.mj31.logger.client.app.features.logplayer.state.LogPlayerLocalState
 import dev.mj31.logger.client.app.features.logplayer.state.LogPlayerState
 import dev.mj31.logger.client.app.features.logplayer.state.LogPlayerStateAssembler
@@ -16,6 +15,7 @@ import dev.mj31.logger.client.domain.model.log.LogEntry
 import dev.mj31.logger.client.domain.model.log.LogFilter
 import dev.mj31.logger.client.domain.model.log.LogSession
 import dev.mj31.logger.client.domain.model.media.VideoMedia
+import dev.mj31.logger.client.domain.model.workspace.WorkspaceSnapshot
 import dev.mj31.logger.client.domain.model.time.TimeRange
 import dev.mj31.logger.client.domain.player.VideoFrame
 import dev.mj31.logger.client.domain.player.VideoPlayer
@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -40,6 +41,8 @@ import kotlinx.coroutines.launch
 import dev.mj31.logger.client.app.features.logplayer.dependencies.LogPlayerRepositories
 import dev.mj31.logger.client.app.features.logplayer.dependencies.LogPlayerUseCases
 import dev.mj31.logger.client.app.features.logplayer.dependencies.LogPlayerFormatTools
+import dev.mj31.logger.client.app.features.logplayer.dependencies.LogPlayerWorkspace
+import dev.mj31.logger.client.app.features.logplayer.workspace.WorkspaceHandler
 import dev.mj31.logger.client.app.view.text.UiText
 import dev.mj31.logger.client.domain.model.log.LogSource
 import dev.mj31.logger.client.app.resources.Res
@@ -72,10 +75,24 @@ class LogPlayerStore(
     private val scope: CoroutineScope,
     private val defaultDispatcher: CoroutineDispatcher,
     private val screenClockDispatcher: CoroutineDispatcher,
+    workspace: LogPlayerWorkspace,
 ) {
 
     private val local = MutableStateFlow(value = LogPlayerLocalState())
     private val effectChannel = Channel<LogPlayerEffect>(capacity = Channel.BUFFERED)
+
+    /** The queue of files waiting for the user to describe their format. */
+    private val formatRequests = FormatRequestHandler(local = local, formatTools = formatTools)
+
+    /** Everything about surviving a restart, kept out of here the way the automatic sync is. */
+    private val workspaceHandler = WorkspaceHandler(
+        local = local,
+        workspace = workspace,
+        scope = scope,
+        emit = ::emit,
+        playbackPosition = { player.state.value.positionMillis },
+        onApplied = ::applyRestoredVideo,
+    )
 
     /** Everything that looks for an anchor instead of being handed one. */
     private val autoSync = AutoSyncHandler(
@@ -177,6 +194,32 @@ class LogPlayerStore(
                     }
                 }
         }
+        scope.launch {
+            workspaceHandler.observeChanges(
+                sources = repositories.session.sources,
+                media = repositories.video.media,
+                syncState = repositories.sync.syncState,
+            )
+        }
+        workspaceHandler.trackPlayback(positions = player.state.map { it.positionMillis })
+    }
+
+    /**
+     * Puts the screencast of a restored workspace back into the decoder, at the frame it was left on.
+     *
+     * A restored screencast counts as already attempted by the automatic synchronization: its anchor
+     * came back with it, and spending an optical scan to rediscover what is already stored would be
+     * pure ceremony.
+     */
+    private fun applyRestoredVideo(snapshot: WorkspaceSnapshot) {
+        autoSyncedPath = snapshot.video?.path
+        val media = snapshot.video
+        if (media == null) {
+            player.close()
+            return
+        }
+        player.open(media = media)
+        player.seekTo(positionMillis = snapshot.videoPositionMillis)
     }
 
     /** The single entry point of the cycle: everything the user does arrives here. */
@@ -186,7 +229,7 @@ class LogPlayerStore(
             LogPlayerIntent.RequestLogImport -> emit(effect = LogPlayerEffect.PickLogFiles)
             is LogPlayerIntent.ImportVideo -> importVideo(path = intent.path)
             is LogPlayerIntent.ImportLogFiles -> importLogFiles(paths = intent.paths)
-            is LogPlayerIntent.UpdateFormatDraft -> updateFormatDraft(
+            is LogPlayerIntent.UpdateFormatDraft -> formatRequests.updateDraft(
                 draft = ManualFormatInput(
                     timestampPattern = intent.timestampPattern,
                     structureTemplate = intent.structureTemplate,
@@ -196,7 +239,7 @@ class LogPlayerStore(
             LogPlayerIntent.SubmitManualFormat -> submitManualFormat()
 
             LogPlayerIntent.AcceptDetectedFormat -> acceptDetectedFormat()
-            LogPlayerIntent.DismissFormatRequest -> dropFormatRequest()
+            LogPlayerIntent.DismissFormatRequest -> formatRequests.dropHead()
             is LogPlayerIntent.UpdateFilter -> local.update { it.copy(filter = intent.filter) }
             is LogPlayerIntent.SetTimeWindow -> local.update { it.copy(timeWindowMillis = intent.windowMillis) }
             is LogPlayerIntent.SelectEntry -> selectEntry(entryId = intent.entryId)
@@ -241,29 +284,48 @@ class LogPlayerStore(
             }
             LogPlayerIntent.CancelClockRegion -> local.update { it.copy(isSelectingClockRegion = false) }
             LogPlayerIntent.CancelAutoSync -> autoSync.cancel()
+            is LogPlayerIntent.Workspace -> handleWorkspaceIntent(intent = intent)
+        }
+    }
+
+    /** The workspace-as-a-file family, delegated whole to the collaborator that owns persistence. */
+    private fun handleWorkspaceIntent(intent: LogPlayerIntent.Workspace) {
+        when (intent) {
+            LogPlayerIntent.StartNewSession -> workspaceHandler.startNew()
+            LogPlayerIntent.ContinueLastSession -> workspaceHandler.continueLast()
+            LogPlayerIntent.RequestSaveSession -> emit(LogPlayerEffect.PickSessionSaveTarget)
+            is LogPlayerIntent.SaveSession -> workspaceHandler.save(targetPath = intent.path)
+            LogPlayerIntent.SaveSessionChanges -> workspaceHandler.flush()
+            LogPlayerIntent.CancelSessionSave -> workspaceHandler.cancelSave()
+            LogPlayerIntent.RequestOpenSession -> emit(LogPlayerEffect.PickSessionFile)
+            is LogPlayerIntent.OpenSession -> workspaceHandler.open(path = intent.path)
         }
     }
 
     /** Lifecycle hook rather than a user intent: releases the native playback resources. */
     fun release() = player.release()
 
+    /**
+     * Last chance to bring a saved session file up to date before the process goes away.
+     *
+     * Everything else has already been written the moment it changed; what is left is the heavy
+     * package, which is deliberately not rewritten on every keystroke.
+     */
+    suspend fun closeWorkspace() = workspaceHandler.closeCurrent()
+
     private fun togglePlayback() {
         if (player.state.value.isPlaying) player.pause() else player.play()
     }
 
     private fun acceptDetectedFormat() {
-        val source = local.value.formatRequests.firstOrNull()?.detectedSource ?: return
+        val source = formatRequests.head?.detectedSource ?: return
         scope.launch {
             repositories.session.addSource(source = source)
-            dropFormatRequest()
+            formatRequests.dropHead()
             emit(
                 effect = LogPlayerEffect.ShowMessage(text = importedMessage(source = source)),
             )
         }
-    }
-
-    private fun dropFormatRequest() {
-        local.update { it.copy(formatRequests = it.formatRequests.drop(n = 1)) }
     }
 
     private fun importLogFiles(paths: List<String>) {
@@ -302,25 +364,10 @@ class LogPlayerStore(
     }
 
 
-    private fun updateFormatDraft(draft: ManualFormatInput) {
-        val request = local.value.formatRequests.firstOrNull() ?: return
-        replaceHeadRequest(
-            request = request.copy(
-                timestampPattern = draft.timestampPattern,
-                structureTemplate = draft.structureTemplate,
-                preview = previewOf(draft = draft, sampleLines = request.sampleLines),
-                error = null,
-            ),
-        )
-    }
-
-    private fun previewOf(draft: ManualFormatInput, sampleLines: List<String>): FormatPreview =
-        formatTools.previewer.preview(input = draft, sampleLines = sampleLines)
-
     private fun submitManualFormat() {
-        val request = local.value.formatRequests.firstOrNull() ?: return
+        val request = formatRequests.head ?: return
         when (val compiled = formatTools.compiler.compile(input = request.draft)) {
-            is FormatCompilationResult.Failure -> updateRequestError(
+            is FormatCompilationResult.Failure -> formatRequests.showError(
                 error = FormatError(message = compiled.message, field = compiled.field),
             )
 
@@ -328,21 +375,21 @@ class LogPlayerStore(
                 when (val result = useCases.importLogFileWithFormat(path = request.path, spec = compiled.spec)) {
                     is LogImportResult.Success -> {
                         repositories.session.addSource(source = result.source)
-                        dropFormatRequest()
+                        formatRequests.dropHead()
                     }
 
                     // A format the user wrote themselves needs no confirmation of what it leaves out.
                     is LogImportResult.NeedsConfirmation -> {
                         repositories.session.addSource(source = result.source)
-                        dropFormatRequest()
+                        formatRequests.dropHead()
                     }
 
                     // Neither input is syntactically wrong: the format simply does not fit the file.
-                    is LogImportResult.Failure -> updateRequestError(
+                    is LogImportResult.Failure -> formatRequests.showError(
                         error = FormatError(message = result.message, field = FormatErrorField.NONE),
                     )
 
-                    is LogImportResult.FormatRequired -> updateRequestError(
+                    is LogImportResult.FormatRequired -> formatRequests.showError(
                         error = FormatError(message = result.reason, field = FormatErrorField.NONE),
                     )
                 }
@@ -449,66 +496,13 @@ class LogPlayerStore(
                 emit(effect = LogPlayerEffect.ShowMessage(text = importedMessage(source = result.source)))
             }
 
-            is LogImportResult.FormatRequired -> local.update {
-                it.copy(formatRequests = it.formatRequests + requestOf(result = result))
-            }
+            is LogImportResult.FormatRequired -> formatRequests.enqueue(result = result)
 
-            is LogImportResult.NeedsConfirmation -> local.update {
-                it.copy(formatRequests = it.formatRequests + confirmationOf(result = result))
-            }
+            is LogImportResult.NeedsConfirmation -> formatRequests.enqueue(result = result)
 
             is LogImportResult.Failure -> emit(
                 effect = LogPlayerEffect.ShowMessage(text = UiText.Raw(value = result.message), isError = true),
             )
-        }
-    }
-
-    /** Opens the dialog on the inferred layout when there is one, on the neutral default otherwise. */
-    private fun requestOf(result: LogImportResult.FormatRequired): FormatRequestUiState {
-        val draft = result.suggestion ?: ManualFormatInput(
-            timestampPattern = FormatDefaults.TIMESTAMP_PATTERN,
-            structureTemplate = FormatDefaults.STRUCTURE_TEMPLATE,
-        )
-        return FormatRequestUiState(
-            path = result.path,
-            fileName = result.fileName,
-            sampleLines = result.sampleLines,
-            reason = result.reason,
-            timestampPattern = draft.timestampPattern,
-            structureTemplate = draft.structureTemplate,
-            preview = previewOf(draft = draft, sampleLines = result.sampleLines),
-            suggestion = result.suggestion,
-        )
-    }
-
-    /** Same dialog as an unrecognized file, but with the parsed source ready behind the accept button. */
-    private fun confirmationOf(result: LogImportResult.NeedsConfirmation): FormatRequestUiState {
-        val draft = result.suggestion ?: ManualFormatInput(
-            timestampPattern = result.source.format.timestampPattern,
-            structureTemplate = FormatDefaults.STRUCTURE_TEMPLATE,
-        )
-        return FormatRequestUiState(
-            path = result.source.path,
-            fileName = result.source.name,
-            sampleLines = result.sampleLines,
-            reason = result.reason,
-            timestampPattern = draft.timestampPattern,
-            structureTemplate = draft.structureTemplate,
-            preview = previewOf(draft = draft, sampleLines = result.sampleLines),
-            suggestion = result.suggestion,
-            detectedSource = result.source,
-        )
-    }
-
-    private fun updateRequestError(error: FormatError) {
-        local.value.formatRequests.firstOrNull()?.let { head ->
-            replaceHeadRequest(request = head.copy(error = error))
-        }
-    }
-
-    private fun replaceHeadRequest(request: FormatRequestUiState) {
-        local.update { current ->
-            current.copy(formatRequests = listOf(request) + current.formatRequests.drop(n = 1))
         }
     }
 

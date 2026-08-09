@@ -16,6 +16,8 @@ leptonica = "1.87.0-1.5.13"
 # KSP moved to its own version line with Kotlin 2.3: `2.3.x` is the KSP release, not the Kotlin one.
 ksp = "2.3.11"
 kotlin-inject = "0.9.0"
+room = "2.8.4"
+sqlite = "2.7.0"
 
 [libraries]
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
@@ -32,6 +34,12 @@ tesseract = { module = "org.bytedeco:tesseract", version.ref = "tesseract" }
 leptonica = { module = "org.bytedeco:leptonica", version.ref = "leptonica" }
 kotlin-inject-runtime = { module = "me.tatarka.inject:kotlin-inject-runtime-kmp", version.ref = "kotlin-inject" }
 kotlin-inject-compiler = { module = "me.tatarka.inject:kotlin-inject-compiler-ksp", version.ref = "kotlin-inject" }
+room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+# Drives a real database through every migration, using the schemas exported into `data/schemas`.
+room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
+# The bundled driver carries its own SQLite build, so the packaged application needs no system library.
+sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
 
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
@@ -39,3 +47,4 @@ compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "compose-m
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 detekt = { id = "dev.detekt", version.ref = "detekt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+room = { id = "androidx.room", version.ref = "room" }

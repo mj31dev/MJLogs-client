@@ -6,6 +6,7 @@ import dev.mj31.logger.client.app.features.logplayer.state.ui.LogSourceUi
 import dev.mj31.logger.client.app.features.logplayer.state.ui.VideoUiState
 import dev.mj31.logger.client.app.features.logplayer.state.ui.AutoSyncUiState
 import dev.mj31.logger.client.app.features.logplayer.state.ui.SyncUiState
+import dev.mj31.logger.client.app.features.logplayer.state.ui.WorkspaceUiState
 import dev.mj31.logger.client.app.features.logplayer.state.format.FormatRequestUiState
 
 /**
@@ -28,6 +29,7 @@ data class LogPlayerState(
     val autoSync: AutoSyncUiState = AutoSyncUiState(),
     val formatRequest: FormatRequestUiState? = null,
     val isImporting: Boolean = false,
+    val workspace: WorkspaceUiState = WorkspaceUiState(),
 ) {
 
     val hasLogs: Boolean

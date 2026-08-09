@@ -2,6 +2,7 @@ package dev.mj31.logger.client.app.features.logplayer
 
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
@@ -131,5 +132,55 @@ class LogPaneTest {
         }
 
         assertThat(intents).containsExactly(LogPlayerIntent.UpdateFilter(filter = LogFilter()))
+    }
+
+    /**
+     * The way back to the playhead after leaving it.
+     *
+     * Following the video already scrolls the list, but it stands aside the moment the user scrolls
+     * and does nothing at all with following switched off — so someone who went up to read something
+     * had no way back except turning following on and waiting for the next frame to move.
+     */
+    @Test
+    fun `jumping to the playhead brings the active record into view`() = runComposeUiTest {
+        val state = longSessionState(activeEntryId = "e150", followVideo = false)
+        setContent { LogPane(state = state, onIntent = {}) }
+
+        onNodeWithText(text = "record number 150").assertDoesNotExist()
+        onNodeWithText(text = "Jump to playhead").performClick()
+        waitForIdle()
+
+        onNodeWithText(text = "record number 150").assertIsDisplayed()
+    }
+
+    /** Nothing to jump to without an anchor, and a control that does nothing must say so. */
+    @Test
+    fun `the jump is offered but disabled while no record is under the playhead`() = runComposeUiTest {
+        setContent { LogPane(state = loadedState(), onIntent = {}) }
+
+        onNodeWithText(text = "Jump to playhead").assertIsDisplayed().assertIsNotEnabled()
+    }
+
+    /**
+     * The header must not reflow when an anchor appears.
+     *
+     * Hiding the control until it works would move "Add logs…" out from under the pointer every time
+     * the synchronization changed, which is the same defect the floating notices were fixed for.
+     */
+    @Test
+    fun `the header keeps its layout whether or not the jump is available`() {
+        val without = addLogsLeft(state = loadedState())
+        val with = addLogsLeft(state = longSessionState(activeEntryId = "e150", followVideo = false))
+
+        assertThat(with).isEqualTo(without)
+    }
+
+    private fun addLogsLeft(state: LogPlayerState): Float {
+        var left = 0f
+        runComposeUiTest {
+            setContent { LogPane(state = state, onIntent = {}) }
+            left = onNodeWithText(text = "Add logs…").fetchSemanticsNode().boundsInRoot.left
+        }
+        return left
     }
 }

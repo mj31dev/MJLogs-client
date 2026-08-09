@@ -16,6 +16,8 @@ import kotlin.test.Test
 import dev.mj31.logger.client.app.view.UiMessage
 import dev.mj31.logger.client.app.features.logplayer.screen.PlayerScreen
 import dev.mj31.logger.client.app.features.logplayer.state.LogPlayerState
+import dev.mj31.logger.client.app.features.logplayer.state.ui.PackageSaveUiState
+import dev.mj31.logger.client.app.features.logplayer.state.ui.WorkspaceUiState
 import dev.mj31.logger.client.app.view.text.UiText
 
 @OptIn(ExperimentalTestApi::class)
@@ -152,6 +154,73 @@ class PlayerScreenTest {
 
         assertThat(invalid).isEqualTo(valid)
     }
+
+    @Test
+    fun `writing a session file is visible over the workspace`() = runComposeUiTest {
+        setContent {
+            PlayerScreen(
+                state = savingState(),
+                frame = mutableStateOf<VideoFrame?>(value = null),
+                message = null,
+                onIntent = {},
+                onDismissMessage = {},
+            )
+        }
+
+        onNodeWithText(text = "Saving session").assertIsDisplayed()
+        onNodeWithText(text = "Copying screencast.mp4").assertIsDisplayed()
+        // The workspace stays readable underneath: a save is not a modal state.
+        onNodeWithText(text = "connected to server").assertIsDisplayed()
+    }
+
+    @Test
+    fun `cancelling a save leaves as an intent`() {
+        val intents = mutableListOf<LogPlayerIntent>()
+
+        runComposeUiTest {
+            setContent {
+                PlayerScreen(
+                    state = savingState(),
+                    frame = mutableStateOf<VideoFrame?>(value = null),
+                    message = null,
+                    onIntent = { intents += it },
+                    onDismissMessage = {},
+                )
+            }
+
+            onNodeWithText(text = "Cancel").performClick()
+        }
+
+        assertThat(intents).containsExactly(LogPlayerIntent.CancelSessionSave)
+    }
+
+    /**
+     * The save bar floats for the same reason a notice does.
+     *
+     * It appears when a save starts and goes when it ends, and a copy of a screencast runs long
+     * enough that the user is reading the log while it happens — so a bar that took part in the
+     * column would move the very records being read, twice per save.
+     */
+    @Test
+    fun `the save bar leaves the layout where it was`() {
+        val quiet = syncBarTop(message = null)
+        val saving = syncBarTop(message = null, state = savingState())
+
+        assertThat(saving).isEqualTo(quiet)
+    }
+
+    private fun savingState(): LogPlayerState = loadedState().copy(
+        workspace = WorkspaceUiState(
+            packagePath = "/cases/investigation.mjclog",
+            packageName = "investigation",
+            save = PackageSaveUiState(
+                fileName = "screencast.mp4",
+                fraction = 0.25f,
+                copiedBytes = 25L,
+                totalBytes = 100L,
+            ),
+        ),
+    )
 
     /** Top edge of the synchronization bar, which is what anything in the column would have pushed. */
     private fun syncBarTop(message: UiMessage?, state: LogPlayerState = loadedState()): Float {

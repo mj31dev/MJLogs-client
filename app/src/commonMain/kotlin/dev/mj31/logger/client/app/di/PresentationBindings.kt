@@ -4,6 +4,19 @@ import dev.mj31.logger.client.app.features.logplayer.dependencies.LogPlayerForma
 import dev.mj31.logger.client.app.features.logplayer.dependencies.LogPlayerRepositories
 import dev.mj31.logger.client.app.features.logplayer.LogPlayerStore
 import dev.mj31.logger.client.app.features.logplayer.dependencies.LogPlayerUseCases
+import dev.mj31.logger.client.app.features.logplayer.dependencies.LogPlayerWorkspace
+import dev.mj31.logger.client.app.features.sessions.SessionsStore
+import dev.mj31.logger.client.app.usecase.ingest.source.LogSourceLoader
+import dev.mj31.logger.client.app.usecase.workspace.CaptureWorkspaceUseCase
+import dev.mj31.logger.client.app.usecase.workspace.ClearWorkspaceUseCase
+import dev.mj31.logger.client.app.usecase.workspace.PersistWorkspaceUseCase
+import dev.mj31.logger.client.app.usecase.workspace.RestoreWorkspaceUseCase
+import dev.mj31.logger.client.app.usecase.workspace.session.CloseSessionPackageUseCase
+import dev.mj31.logger.client.app.usecase.workspace.session.OpenSessionPackageUseCase
+import dev.mj31.logger.client.app.usecase.workspace.session.SaveSessionPackageUseCase
+import dev.mj31.logger.client.domain.repository.WorkspaceRepository
+import dev.mj31.logger.client.domain.session.SessionPackageStore
+import kotlin.time.Clock
 import dev.mj31.logger.client.domain.format.compile.LogFormatCompiler
 import dev.mj31.logger.client.domain.format.preview.LogFormatPreviewer
 import dev.mj31.logger.client.domain.player.VideoPlayer
@@ -77,6 +90,67 @@ interface PresentationBindings {
         previewer: LogFormatPreviewer,
     ): LogPlayerFormatTools = LogPlayerFormatTools(compiler = compiler, previewer = previewer)
 
+    /**
+     * The whole persistence contour.
+     *
+     * It is assembled here rather than injected piece by piece because every one of these use cases
+     * exists only to serve the player, and none of them is useful on its own.
+     */
+    @Provides
+    fun workspace(
+        workspaceRepository: WorkspaceRepository,
+        packageStore: SessionPackageStore,
+        sessionRepository: LogSessionRepository,
+        videoRepository: VideoRepository,
+        syncRepository: SyncRepository,
+        loader: LogSourceLoader,
+        clock: Clock,
+    ): LogPlayerWorkspace {
+        val restore = RestoreWorkspaceUseCase(
+            loader = loader,
+            sessionRepository = sessionRepository,
+            videoRepository = videoRepository,
+            syncRepository = syncRepository,
+        )
+        val persist = PersistWorkspaceUseCase(
+            workspaceRepository = workspaceRepository,
+            packageStore = packageStore,
+        )
+        val closePackage = CloseSessionPackageUseCase(
+            packageStore = packageStore,
+            persistWorkspace = persist,
+        )
+        return LogPlayerWorkspace(
+            repository = workspaceRepository,
+            capture = CaptureWorkspaceUseCase(
+                sessionRepository = sessionRepository,
+                videoRepository = videoRepository,
+                syncRepository = syncRepository,
+            ),
+            restore = restore,
+            clear = ClearWorkspaceUseCase(
+                closeSessionPackage = closePackage,
+                sessionRepository = sessionRepository,
+                videoRepository = videoRepository,
+                syncRepository = syncRepository,
+                workspaceRepository = workspaceRepository,
+            ),
+            persist = persist,
+            savePackage = SaveSessionPackageUseCase(
+                packageStore = packageStore,
+                workspaceRepository = workspaceRepository,
+                clock = clock,
+            ),
+            openPackage = OpenSessionPackageUseCase(
+                packageStore = packageStore,
+                restoreWorkspace = restore,
+                workspaceRepository = workspaceRepository,
+                clock = clock,
+            ),
+            closePackage = closePackage,
+        )
+    }
+
     @Provides
     fun parseFrameTime(): ParseFrameTimeUseCase = ParseFrameTimeUseCase()
 
@@ -113,6 +187,13 @@ interface PresentationBindings {
 
     @AppScope
     @Provides
+    fun sessionsStore(
+        workspaceRepository: WorkspaceRepository,
+        scope: CoroutineScope,
+    ): SessionsStore = SessionsStore(repository = workspaceRepository, scope = scope)
+
+    @AppScope
+    @Provides
     fun store(
         repositories: LogPlayerRepositories,
         useCases: LogPlayerUseCases,
@@ -122,6 +203,7 @@ interface PresentationBindings {
         scope: CoroutineScope,
         dispatcher: DefaultDispatcher,
         screenClockDispatcher: ScreenClockDispatcher,
+        workspace: LogPlayerWorkspace,
     ): LogPlayerStore = LogPlayerStore(
         screenClockDispatcher = screenClockDispatcher,
         repositories = repositories,
@@ -131,5 +213,6 @@ interface PresentationBindings {
         stateAssembler = stateAssembler,
         scope = scope,
         defaultDispatcher = dispatcher,
+        workspace = workspace,
     )
 }

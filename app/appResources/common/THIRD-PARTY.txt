@@ -78,10 +78,20 @@ Other components  —  Apache License 2.0
 --------------------------------------------------------------------------------
 
 Kotlin standard library, kotlinx.coroutines, kotlinx.datetime, Compose Multiplatform, Skiko
-(which embeds Skia, BSD-3-Clause), AndroidX Lifecycle, kotlin-inject, JavaCV and JavaCPP.
+(which embeds Skia, BSD-3-Clause), AndroidX Lifecycle, AndroidX Room, AndroidX SQLite, the AndroidX
+support libraries pulled in with them (annotation, arch.core, collection, savedstate,
+navigationevent), JSpecify, kotlin-inject, JavaCV and JavaCPP.
 
 JavaCV and JavaCPP are offered by their authors under Apache-2.0, GPLv2 or GPLv2-with-Classpath-
 Exception; this application takes them under the Apache License 2.0.
+
+--------------------------------------------------------------------------------
+SQLite  —  Public Domain
+--------------------------------------------------------------------------------
+
+The AndroidX SQLite bundled driver carries its own build of SQLite (https://sqlite.org), so this
+application depends on no system database library. SQLite's authors dedicated the code to the public
+domain: it carries no copyright claim and no licence conditions.
 
 --------------------------------------------------------------------------------
 Java runtime  —  GNU General Public License version 2 with the Classpath Exception

@@ -16,27 +16,32 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.mj31.logger.client.app.features.logplayer.LogPlayerIntent
+import dev.mj31.logger.client.app.theme.Spacing
 import dev.mj31.logger.client.app.view.LogRow
 import dev.mj31.logger.client.domain.model.log.LogFilter
 import dev.mj31.logger.client.app.features.logplayer.state.LogPlayerState
 import dev.mj31.logger.client.app.resources.Res
 import dev.mj31.logger.client.app.resources.log_add_files
 import dev.mj31.logger.client.app.resources.log_empty_description
+import dev.mj31.logger.client.app.resources.log_jump_to_playhead
 import dev.mj31.logger.client.app.resources.log_empty_title
 import dev.mj31.logger.client.app.resources.log_no_match_description
 import dev.mj31.logger.client.app.resources.log_no_match_title
@@ -44,6 +49,7 @@ import dev.mj31.logger.client.app.resources.log_record_count
 import dev.mj31.logger.client.app.resources.log_record_count_filtered
 import dev.mj31.logger.client.app.resources.log_reset_filters
 import dev.mj31.logger.client.app.resources.log_title
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -60,12 +66,24 @@ fun LogPane(
 ) {
     val onFilterChange: (LogFilter) -> Unit = { filter -> onIntent(LogPlayerIntent.UpdateFilter(filter = filter)) }
     val onImportLogsClick = { onIntent(LogPlayerIntent.RequestLogImport) }
+
+    // Hoisted so the header can drive it. Where the list is scrolled to is not part of the workspace
+    // and never outlives the screen, so it stays here rather than becoming a field of the state.
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
     Column(
         modifier = modifier
             .background(color = MaterialTheme.colorScheme.background)
             .padding(all = 12.dp),
     ) {
-        LogPaneHeader(state = state, onImportLogsClick = onImportLogsClick)
+        LogPaneHeader(
+            state = state,
+            onJumpToPlayhead = {
+                val index = state.entries.indexOfFirst { it.id == state.activeEntryId }
+                if (index >= 0) scope.launch { listState.animateScrollToItem(index = index) }
+            },
+            onImportLogsClick = onImportLogsClick,
+        )
 
         if (state.sources.isNotEmpty()) {
             Spacer(modifier = Modifier.height(height = 8.dp))
@@ -99,6 +117,7 @@ fun LogPane(
 
                 else -> LogList(
                     state = state,
+                    listState = listState,
                     onEntrySelected = { id -> onIntent(LogPlayerIntent.SelectEntry(entryId = id)) },
                 )
             }
@@ -107,7 +126,11 @@ fun LogPane(
 }
 
 @Composable
-private fun LogPaneHeader(state: LogPlayerState, onImportLogsClick: () -> Unit) {
+private fun LogPaneHeader(
+    state: LogPlayerState,
+    onJumpToPlayhead: () -> Unit,
+    onImportLogsClick: () -> Unit,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -133,13 +156,32 @@ private fun LogPaneHeader(state: LogPlayerState, onImportLogsClick: () -> Unit) 
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Button(onClick = onImportLogsClick) { Text(text = stringResource(resource = Res.string.log_add_files)) }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(space = Spacing.small),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Always present, disabled when there is nowhere to jump: a control that came and went
+            // with the synchronization would shift the button beside it every time an anchor
+            // changed. Quieter than "Add logs…" — the pane already has its one filled button.
+            OutlinedButton(
+                onClick = onJumpToPlayhead,
+                enabled = state.activeEntryId != null,
+            ) {
+                Text(text = stringResource(resource = Res.string.log_jump_to_playhead))
+            }
+            Button(onClick = onImportLogsClick) {
+                Text(text = stringResource(resource = Res.string.log_add_files))
+            }
+        }
     }
 }
 
 @Composable
-private fun LogList(state: LogPlayerState, onEntrySelected: (String) -> Unit) {
-    val listState = rememberLazyListState()
+private fun LogList(
+    state: LogPlayerState,
+    listState: LazyListState,
+    onEntrySelected: (String) -> Unit,
+) {
     val entries = state.entries
 
     // Keep the record under the playhead visible, but never fight a user who is scrolling.

@@ -31,6 +31,9 @@ class UnavailableVideoPlayer(
         playbackState.value = PlaybackState(status = PlaybackStatus.ERROR, errorMessage = reason)
     }
 
+    /** There is nothing to let go of, but the complaint stays: the backend is still missing. */
+    override fun close() = Unit
+
     override fun play() = Unit
 
     override fun pause() = Unit

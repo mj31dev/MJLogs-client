@@ -111,6 +111,21 @@ class FFmpegVideoPlayer(
         }
     }
 
+    /**
+     * Closes the file and returns to the state the player starts in.
+     *
+     * The scope stays alive: this is the workspace being emptied, not the application ending, and
+     * the very next thing that happens may be another file being opened on it.
+     */
+    override fun close() {
+        scope.launch {
+            stopPlayback()
+            closeGrabber()
+            frameState.value = null
+            playbackState.value = PlaybackState()
+        }
+    }
+
     override fun release() {
         runBlocking {
             runCatching { stopPlayback() }
