@@ -1,84 +1,94 @@
-# MJLogs 1.0.0-alpha2 — it lines the timelines up by itself, and it remembers
+# MJLogs 1.0.0-alpha3 — it reads the logs you actually have
 
-The first alpha put a screen recording beside the logs it produced and let you align the two
-timelines by hand. This one does the aligning for you, and stops forgetting everything the moment
-you close the window.
+The second alpha lined a screencast up with its logs by itself and stopped forgetting between runs,
+but it only read line-separated text, placed every dateless log on the day it was opened, read every
+clock as UTC, and happily showed the same file twice.
 
-Both of the things the previous notes listed as known limitations — "sessions live in memory only"
-and "synchronization is manual by design" — are what this release is about.
+The first item on its list of known limitations — "JSON, CSV and compressed logs were scoped and
+deliberately deferred" — is the start of this release. The rest is about logs as they come out of
+real devices and real servers: with a banner on top, from another time zone, and in overlapping
+pieces.
 
-## Automatic synchronization
+## JSON, tables and archives
 
-Press *Synchronize automatically* and MJLogs finds the correlation point on its own, in two steps:
+A log no longer has to be plain text:
 
-- **The container's creation time.** A recording knows when it started; that places the video on the
-  wall clock to about a second.
-- **The clock on the screen.** If the recording shows one, MJLogs reads it — with Tesseract, bundled,
-  entirely on the machine — and waits for the moment it *changes minute*. A clock that reads 10:23
-  could be anywhere inside that minute; the frame where it becomes 10:24 is exact. That takes the
-  anchor from about a second down to a frame.
+- **JSON Lines** — one object per line. The time, level, tag and message are found by key, including
+  keys a logger named its own way, as long as the values agree on one layout.
+- **Comma, tab or semicolon separated tables**, with or without a header row. The delimiter is
+  inferred: only one of them splits every line the same way.
+- **`.gz` and `.zip`** — an archive is opened as the files inside it, as if you had picked them one by
+  one.
 
-If the clock is somewhere unusual, *Point at the clock…* lets you drag a rectangle around it.
+When detection cannot tell, the format dialog now asks what shape the file is — *Plain lines*,
+*JSON per line* or *Columns* — and describes each in its own terms: keys for JSON, columns by name or
+position for a table.
 
-Every anchor carries **where it came from and how far off it can be** — the sync bar says
-`from the clock on screen, ±40ms` or `by the selected record`, so you always know whether you are
-looking at something exact or something approximate. Pinning a record by hand still works and still
-wins; nothing downstream cares which of the three produced the anchor.
+A file with an extension MJLogs does not know is no longer refused outright: you are asked, because
+a log carries no reserved extension and you may know better.
 
-## Nothing is lost between runs
+## The right day
 
-There is now a store on disk, and the workspace reaches it the moment anything changes — the files
-you opened, the format each was read under, the anchor, the filters, the playhead. Close the window
-mid-investigation, or lose the process outright, and it comes back where you left it.
+A time without a date used to land on the day the file was opened, which moved last week's log onto
+today. The day now comes from the file itself, strongest first:
 
-Log files are **referenced, never copied** into it. They stay the source of truth and are read again
-on restore, so a log that grew since your last visit comes back whole rather than truncated to
-whatever was captured then.
+- a date the file **writes in its header** (`Log started 2026-08-01 22:14`);
+- a date in its **name**, as log rotation leaves them (`app.log.2026-08-01`);
+- the moment it was **last written**.
 
-## Sessions as files you can hand to someone
-
-*Save session as…* writes a **`.mjclog`** — a single self-contained file carrying copies of every log
-and of the screencast. Mail it, archive it, open it on another machine; nothing inside points at a
-path that only existed on yours.
-
-It is written when you ask, when you close the session and when you leave the application — never
-behind your back, because it carries a screencast and rewriting it copies every byte. Between the
-change and the write the window title carries a `•` to say the file is behind what is on screen.
-
-Double-clicking one in the Finder opens it, once the application has been installed and launched
+A log that runs past midnight fits two days equally well, and reading it on the wrong one puts every
+record a day away from the screencast. When nothing settles it, MJLogs asks which of the two it is,
 once.
 
-## A start screen
+## Time zones
 
-Launching now lands on a list rather than an empty workspace: **continue where you left off**, reopen
-a saved session, or start a new one. The last few sessions are also an inline submenu under
-*Session → Recent sessions*, two clicks from anywhere.
+Every record is now placed on the real UTC timeline, and every file has a zone of its own: a region
+such as `Europe/Berlin`, which follows daylight saving time across the file, or a fixed offset such as
+`UTC+03:00`. Where the zone comes from, strongest first:
 
-## Light theme
+1. an offset written into the timestamps themselves (`+03:00`, `Z`);
+2. the zone you chose for the file;
+3. a zone the file names in its header (`TZ: Europe/Berlin`, `(UTC+3)`);
+4. UTC, as before.
 
-*View → Match the system / Light / Dark.* The default follows the operating system; the choice is
-remembered. The severity colours are defined per scheme — the greens and ambers that read against a
-near-black workspace are close to invisible on white, so they are not reused.
+The log list shows each record's time **as the file wrote it**. Once the session holds a file that
+is not in UTC, a quieter second column gives the same moment in UTC — that is the column files from
+different zones interleave by. Each file's chip says which zone it is read in and where that came
+from, and *Time zone…* in its menu changes it; the file is read again under the new zone and keeps
+its identity, so filters and the anchor still point where they did.
 
-## Smaller things
+The clock on the screen is read in the zone of the logs beside it — a phone in Berlin shows Berlin
+time — whether you type what a frame shows or let *Synchronize automatically* read it. The sync bar
+names that zone, and you can set it by hand.
 
-- **Jump to playhead** in the log pane header: the way back to the record under the current frame
-  after you have scrolled away or switched *Follow video* off.
-- **New session** empties the workspace, writing out and releasing the session file first rather than
-  abandoning it mid-change.
-- A missing file no longer takes the whole session down: it drops out with a message and the rest
-  opens.
+## Headers
+
+Text before a file's first record — a banner, the device, the build, when logging started — no longer
+counts against its format and no longer shows up as skipped lines. It is kept as the file's header,
+open verbatim from the chip's menu (*File header*), and its date and zone are used as described
+above. JSON and table formats are recognized past a header too.
+
+## The same file twice
+
+- **The same path** is refused before anything is read: it is already open.
+- **The same records under another path** — a copy — is put to you: skip it, or open it anyway.
+- **An overlapping file** — the same log caught at another moment, a rotated file or a later copy —
+  can be **merged** into the one already open: shared records are kept once, the rest joins them in
+  time order, and the chip says `2 files`. A merged source remembers every file it was made from; they
+  are saved into a `.mjclog` with it and read again on restore.
+
+## The whole window on one design system
+
+The player panes now follow the same written rules as the start screen: one spacing scale, one corner
+scale by role, one menu without shadows, monospace only for text a file wrote and for the figures read
+against it, and colours drawn on the video frame kept apart from the light and dark schemes. One bug
+fell out of it: the placeholder shown before a video is loaded was dark text on the black frame in
+the light scheme, and is now legible.
 
 ## Download
 
-`MJLogs-1.0.0-alpha2.dmg` — macOS on **Apple Silicon**, 111 MB. The bundle carries its own Java 21
-runtime, the FFmpeg libraries, the Tesseract recognizer and its English model, so it is noticeably
-larger than the first alpha.
-
-The disk image itself has been laid out rather than left to the default: the application and the
-`Applications` folder sit side by side with the gesture between them drawn on the background, the
-volume carries the application's own icon, and the `Licenses` folder is in plain sight instead of
-buried in the bundle.
+`MJLogs-1.0.0-alpha3.dmg` — macOS on **Apple Silicon**. The bundle carries its own Java 21 runtime,
+the FFmpeg libraries, the Tesseract recognizer and its English model.
 
 The app is **not notarized**, so macOS refuses it on first launch. Open it once with right-click →
 *Open*, or clear the quarantine flag:
@@ -89,6 +99,7 @@ xattr -dr com.apple.quarantine /Applications/MJLogs.app
 
 For `.mjclog` files to open from the Finder, the application has to live somewhere macOS scans —
 `/Applications` — and be launched at least once, which is when the system learns what it handles.
+A session file saved by alpha 2 opens here; one saved by this version does not open in alpha 2.
 
 Windows and Linux are supported by the code but not built here — the native decoder is resolved for
 the host platform, so build on the target machine with `./gradlew :app:packageMsi` or
@@ -98,20 +109,15 @@ The disk image carries a `Licenses` folder next to the application with the Apac
 and GPL texts the bundled FFmpeg refers to, and the notice naming every bundled component. The same
 files are readable from **About MJLogs** inside the app.
 
-## Try it in one command
-
-```bash
-./gradlew :app:desktopRun --args="samples/device-screencast.mov samples/network.txt samples/device-ui.txt samples/backend-service.txt"
-```
-
-The recording shows a clock, so *Synchronize automatically* has something to read.
-
 ## Known limitations
 
-- Logs must still be line-separated text (`.txt`, `.log`). JSON, CSV and compressed logs were
-  scoped and deliberately deferred.
-- Only the start screen has been rebuilt on the new design system; the player panes still carry the
-  first alpha's spacing.
+- A merge is offered only between files read under the same format and the same zone, and cannot be
+  undone other than by closing the merged file and opening its parts again.
+- A header is recognized as the text before the first record; a date is read from it only when written
+  year first (`2026-08-01`, `2026/08/01`) or day first with dots (`01.08.2026`) — `03/04/2026` means
+  two different days on two sides of the Atlantic and is left alone.
+- A file whose lines carry their own offset is shown in the offset of its first record, even if later
+  lines switch.
 - The automatic clock reader needs a clock that is legible and that changes minute somewhere in the
   recording. When it finds neither, it says so and leaves the metadata anchor in place.
 - The time picker reaches minutes (all Material 3 offers); seconds stay typed.
@@ -121,10 +127,13 @@ The recording shows a clock, so *Synchronize automatically* has something to rea
 
 ## Under the hood
 
-Kotlin 2.3.21, Compose Multiplatform 1.11.1, Gradle 9.7, Room 2.8.4 with a bundled SQLite. Clean
-architecture across `:domain`, `:data` and `:app` with a compile-time DI graph; the visual rules are
-written down rather than implied, and screens are rendered and inspected as part of building them.
-A suite of 608 tests reaches from the parsers to rendered UI, with Detekt on every build.
+Kotlin 2.3.21, Compose Multiplatform 1.11.1, Gradle 9.7, Room 2.8.4 with a bundled SQLite 2.7.0,
+kotlinx.serialization 1.9.0 for reading JSON records, FFmpeg 8.0.1 and Tesseract 5.5.2 through
+JavaCPP Presets 1.5.13. The store's schema moved from version 4 to 6 — a zone per format, and a table
+of merged parts — and both the application store and saved session files are migrated in place.
+Clean architecture across `:domain`, `:data` and `:app` with a compile-time DI graph; the visual rules
+are written down rather than implied, and screens are rendered and inspected as part of building them.
+A suite of 769 tests reaches from the parsers to rendered UI, with Detekt on every build.
 
 Apache 2.0; the bundled FFmpeg binaries are LGPL v3 and dynamically loaded, details in
 [THIRD-PARTY.md](THIRD-PARTY.md).
