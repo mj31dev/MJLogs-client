@@ -1,5 +1,7 @@
 package dev.mj31.logger.client.app.features.logplayer
 
+import kotlinx.datetime.TimeZone
+
 import dev.mj31.logger.client.app.features.logplayer.state.LogPlayerLocalState
 import dev.mj31.logger.client.app.resources.Res
 import dev.mj31.logger.client.app.resources.message_auto_sync_unavailable
@@ -45,6 +47,7 @@ class AutoSyncHandler(
     private val dispatcher: CoroutineDispatcher,
     private val emit: (LogPlayerEffect) -> Unit,
     private val seekTo: (Long) -> Unit,
+    private val syncZone: () -> TimeZone,
 ) {
 
     private var job: Job? = null
@@ -54,12 +57,12 @@ class AutoSyncHandler(
 
     /** The whole cascade: the container's creation time first, then the clock on the screen. */
     fun automatic(media: VideoMedia, session: LogSession) = launchScan(session = session) {
-        autoSynchronize.automatic(media = media, session = session)
+        autoSynchronize.automatic(media = media, session = session, timeZone = syncZone())
     }
 
     /** Trades an anchor good to a second for one good to a frame; never runs unasked. */
     fun refine(media: VideoMedia, session: LogSession, region: ClockRegion?) = launchScan(session = session) {
-        autoSynchronize.refine(media = media, session = session, region = region)
+        autoSynchronize.refine(media = media, session = session, region = region, timeZone = syncZone())
     }
 
     /** A rectangle the user drew: kept for this screencast, and read from immediately. */
@@ -154,7 +157,10 @@ class AutoSyncHandler(
      */
     private fun show(anchor: SyncAnchor) {
         local.update {
-            it.copy(frameTime = formatLogDateTime(instant = anchor.logTimestamp), frameTimeError = false)
+            it.copy(
+                frameTime = formatLogDateTime(instant = anchor.logTimestamp, timeZone = syncZone()),
+                frameTimeError = false,
+            )
         }
         seekTo(anchor.videoPositionMillis)
     }
@@ -170,6 +176,6 @@ class AutoSyncHandler(
             SyncOrigin.VIDEO_METADATA -> Res.string.message_auto_synchronized_metadata
             else -> Res.string.message_auto_synchronized_clock
         },
-        arguments = listOf(formatLogDateTime(instant = anchor.logTimestamp)),
+        arguments = listOf(formatLogDateTime(instant = anchor.logTimestamp, timeZone = syncZone())),
     )
 }

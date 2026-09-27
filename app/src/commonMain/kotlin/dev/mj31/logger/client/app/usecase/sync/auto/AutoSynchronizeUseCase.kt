@@ -1,5 +1,7 @@
 package dev.mj31.logger.client.app.usecase.sync.auto
 
+import kotlinx.datetime.TimeZone
+
 import dev.mj31.logger.client.app.usecase.sync.auto.metadata.MetadataAnchorUseCase
 import dev.mj31.logger.client.app.usecase.sync.auto.screen.FindMinuteChangeUseCase
 import dev.mj31.logger.client.app.usecase.sync.auto.screen.LocateClockRegionUseCase
@@ -42,10 +44,15 @@ class AutoSynchronizeUseCase(
 ) {
 
     /** The cascade run when a screencast and logs first meet: metadata, then the picture. */
-    suspend fun automatic(media: VideoMedia, session: LogSession): AutoSyncOutcome {
+    /** [timeZone] is the one the screen's clock is read in; see [ResolveClockAnchorUseCase]. */
+    suspend fun automatic(
+        media: VideoMedia,
+        session: LogSession,
+        timeZone: TimeZone = TimeZone.UTC,
+    ): AutoSyncOutcome {
         val fromMetadata = metadataAnchor(media = media, logRange = session.timeRange)
         if (fromMetadata != null) return apply(anchor = fromMetadata)
-        return refine(media = media, session = session, region = null)
+        return refine(media = media, session = session, region = null, timeZone = timeZone)
     }
 
     /**
@@ -54,12 +61,17 @@ class AutoSynchronizeUseCase(
      *
      * [region] is what the user pointed at, when they had to; `null` means look for it.
      */
-    suspend fun refine(media: VideoMedia, session: LogSession, region: ClockRegion?): AutoSyncOutcome {
+    suspend fun refine(
+        media: VideoMedia,
+        session: LogSession,
+        region: ClockRegion?,
+        timeZone: TimeZone = TimeZone.UTC,
+    ): AutoSyncOutcome {
         if (session.timeRange == null) return AutoSyncOutcome.NothingToCorrelate
         if (!clockReader.isAvailable) return AutoSyncOutcome.RecognizerMissing
         val scan = scanner.open(media = media) ?: return AutoSyncOutcome.VideoUnreadable
         return try {
-            fromScreenClock(scan = scan, session = session, region = region)
+            fromScreenClock(scan = scan, session = session, region = region, timeZone = timeZone)
         } finally {
             scan.close()
         }
@@ -69,6 +81,7 @@ class AutoSynchronizeUseCase(
         scan: VideoScan,
         session: LogSession,
         region: ClockRegion?,
+        timeZone: TimeZone,
     ): AutoSyncOutcome {
         // Where the clock sits is looked for across the whole recording; when it changed minute is
         // hunted only in the opening minute, which is all the anchor needs.
@@ -83,6 +96,7 @@ class AutoSynchronizeUseCase(
                 logRange = session.timeRange,
                 videoDurationMillis = scan.durationMillis,
                 accuracyMillis = change.accuracyMillis,
+                timeZone = timeZone,
             ),
         )
     }

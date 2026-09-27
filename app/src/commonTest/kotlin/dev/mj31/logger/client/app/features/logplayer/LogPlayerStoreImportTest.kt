@@ -58,7 +58,7 @@ class LogPlayerStoreImportTest {
     @Test
     fun `the inferred format reaches the dialog so it can be pre-filled`() = runTest {
         val robot = LogPlayerRobot.create(testScope = this)
-        val suggestion = ManualFormatInput(
+        val suggestion = ManualFormatInput.Template(
             timestampPattern = "dd.MM.yyyy_HH.mm.ss",
             structureTemplate = "<{any}>~{timestamp}~{tag}~{message}",
         )

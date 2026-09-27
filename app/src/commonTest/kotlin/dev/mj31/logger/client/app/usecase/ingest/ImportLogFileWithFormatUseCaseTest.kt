@@ -1,9 +1,12 @@
 package dev.mj31.logger.client.app.usecase.ingest
 
+import dev.mj31.logger.client.app.usecase.ingest.date.ResolveStartDayUseCase
 import com.google.common.truth.Truth.assertThat
 import dev.mj31.logger.client.app.fake.format.FakeLogFormatDetector
 import dev.mj31.logger.client.app.fake.format.ScriptedLogLineParser
 import dev.mj31.logger.client.app.fake.format.ScriptedLogLineParserFactory
+import dev.mj31.logger.client.app.usecase.ingest.date.ResolveReferenceDateUseCase
+import dev.mj31.logger.client.app.fake.source.FakeLogFileExpander
 import dev.mj31.logger.client.app.fake.log.TestLogEntries
 import dev.mj31.logger.client.app.fake.source.FakeTextFileDataSource
 import dev.mj31.logger.client.app.fake.source.FixedClock
@@ -36,8 +39,6 @@ class ImportLogFileWithFormatUseCaseTest {
         dataSource = dataSource,
         assembler = LogSourceAssembler(parserFactory = parserFactory),
         idGenerator = FixedIdGenerator(ids = listOf("src-1")),
-        clock = FixedClock(instant = TestLogEntries.BASE),
-        timeZone = TimeZone.UTC,
     )
 
     @Test
@@ -48,6 +49,8 @@ class ImportLogFileWithFormatUseCaseTest {
         )
         val useCase = ImportLogFileWithFormatUseCase(
             loader = loader(dataSource = FakeTextFileDataSource.of(content = content(lines = lines))),
+            expander = FakeLogFileExpander(),
+            resolveReferenceDate = ResolveReferenceDateUseCase(timeZone = TimeZone.UTC),
             dispatcher = dispatcher,
         )
 
@@ -65,6 +68,8 @@ class ImportLogFileWithFormatUseCaseTest {
             loader = loader(
                 dataSource = FakeTextFileDataSource.of(content = content(lines = listOf("header", "footer"))),
             ),
+            expander = FakeLogFileExpander(),
+            resolveReferenceDate = ResolveReferenceDateUseCase(timeZone = TimeZone.UTC),
             dispatcher = dispatcher,
         )
 
@@ -82,6 +87,8 @@ class ImportLogFileWithFormatUseCaseTest {
                 dataSource = FakeTextFileDataSource.of(content = content(lines = listOf("anything"))),
                 parserFactory = ScriptedLogLineParserFactory(createFailureMessage = "Invalid timestamp pattern"),
             ),
+            expander = FakeLogFileExpander(),
+            resolveReferenceDate = ResolveReferenceDateUseCase(timeZone = TimeZone.UTC),
             dispatcher = dispatcher,
         )
 
@@ -96,6 +103,8 @@ class ImportLogFileWithFormatUseCaseTest {
             loader = loader(
                 dataSource = FakeTextFileDataSource.failing(path = PATH, error = IllegalStateException("Disk error")),
             ),
+            expander = FakeLogFileExpander(),
+            resolveReferenceDate = ResolveReferenceDateUseCase(timeZone = TimeZone.UTC),
             dispatcher = dispatcher,
         )
 
@@ -112,25 +121,33 @@ class ImportLogFileWithFormatUseCaseTest {
             detector = FakeLogFormatDetector(
                 result = FormatDetectionResult.Detected(spec = TestLogEntries.SPEC, confidence = 1f),
             ),
+            expander = FakeLogFileExpander(),
+            resolveReferenceDate = ResolveReferenceDateUseCase(timeZone = TimeZone.UTC),
+            resolveStartDay = ResolveStartDayUseCase(timeZone = TimeZone.UTC),
             dispatcher = dispatcher,
         )
 
-        val result = useCase(path = "/media/screencast.mp4")
+        val result = useCase(path = "/media/screencast.mp4").single()
 
-        val failure = result as LogImportResult.Failure
-        assertThat(failure.message).contains("screencast.mp4")
-        assertThat(failure.message).contains(".txt")
+        val refusal = result as LogImportResult.UnsupportedType
+        assertThat(refusal.fileName).isEqualTo("screencast.mp4")
+        assertThat(refusal.message).contains(".txt")
         assertThat(dataSource.requestedPaths).isEmpty()
     }
 
     @Test
     fun `a manual format cannot smuggle in an unsupported type either`() = runTest {
         val dataSource = FakeTextFileDataSource()
-        val useCase = ImportLogFileWithFormatUseCase(loader = loader(dataSource = dataSource), dispatcher = dispatcher)
+        val useCase = ImportLogFileWithFormatUseCase(
+            loader = loader(dataSource = dataSource),
+            expander = FakeLogFileExpander(),
+            resolveReferenceDate = ResolveReferenceDateUseCase(timeZone = TimeZone.UTC),
+            dispatcher = dispatcher,
+        )
 
         val result = useCase(path = "/media/screencast.mp4", spec = TestLogEntries.SPEC)
 
-        assertThat(result).isInstanceOf(LogImportResult.Failure::class.java)
+        assertThat(result).isInstanceOf(LogImportResult.UnsupportedType::class.java)
         assertThat(dataSource.requestedPaths).isEmpty()
     }
 
@@ -153,10 +170,13 @@ class ImportLogFileWithFormatUseCaseTest {
             detector = FakeLogFormatDetector(
                 result = FormatDetectionResult.Detected(spec = TestLogEntries.SPEC, confidence = 1f),
             ),
+            expander = FakeLogFileExpander(),
+            resolveReferenceDate = ResolveReferenceDateUseCase(timeZone = TimeZone.UTC),
+            resolveStartDay = ResolveStartDayUseCase(timeZone = TimeZone.UTC),
             dispatcher = dispatcher,
         )
 
-        val result = useCase(path = "/logs/App.LOG")
+        val result = useCase(path = "/logs/App.LOG").single()
 
         assertThat(result).isInstanceOf(LogImportResult.Success::class.java)
     }

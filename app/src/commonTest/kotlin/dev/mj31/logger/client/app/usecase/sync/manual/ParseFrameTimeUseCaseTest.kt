@@ -1,11 +1,12 @@
 package dev.mj31.logger.client.app.usecase.sync.manual
 
+import kotlinx.datetime.TimeZone
 import com.google.common.truth.Truth.assertThat
 import kotlin.time.Instant
 import kotlinx.datetime.LocalDate
 import kotlin.test.Test
 
-/** The typed time is read as UTC, which is the zone the workspace prints log timestamps in. */
+/** The typed time is read in the zone of the clock it was copied from; UTC unless told otherwise. */
 class ParseFrameTimeUseCaseTest {
 
     private val useCase = ParseFrameTimeUseCase()
@@ -98,5 +99,27 @@ class ParseFrameTimeUseCaseTest {
 
     private companion object {
         val SESSION_DATE: LocalDate = LocalDate.parse(input = "2024-05-01")
+    }
+
+    @Test
+    fun `a typed time is read in the zone of the screen it was copied from`() {
+        val parsed = useCase(
+            text = "2024-05-01 10:00:20",
+            referenceDate = null,
+            timeZone = TimeZone.of(zoneId = "Europe/Berlin"),
+        )
+
+        assertThat(parsed).isEqualTo(Instant.parse("2024-05-01T08:00:20Z"))
+    }
+
+    @Test
+    fun `a time without a date is read in the zone too`() {
+        val parsed = useCase(
+            text = "10:00:20",
+            referenceDate = SESSION_DATE,
+            timeZone = TimeZone.of(zoneId = "UTC+03:00"),
+        )
+
+        assertThat(parsed).isEqualTo(Instant.parse("2024-05-01T07:00:20Z"))
     }
 }

@@ -1,5 +1,14 @@
 package dev.mj31.logger.client.app
 
+import dev.mj31.logger.client.app.usecase.ingest.source.RebuildSourceUseCase
+import dev.mj31.logger.client.app.usecase.ingest.duplicate.DetectDuplicateUseCase
+import dev.mj31.logger.client.app.usecase.ingest.duplicate.MergeSourcePartsUseCase
+import dev.mj31.logger.client.app.usecase.ingest.zone.ChangeSourceZoneUseCase
+import dev.mj31.logger.client.app.usecase.sync.ResolveSyncZoneUseCase
+import dev.mj31.logger.client.app.usecase.ingest.date.ResolveStartDayUseCase
+import kotlin.test.assertIs
+import dev.mj31.logger.client.domain.format.compile.ManualFormatInput
+import dev.mj31.logger.client.app.usecase.ingest.date.ResolveReferenceDateUseCase
 import com.google.common.truth.Truth.assertThat
 import dev.mj31.logger.client.app.fake.FakeVideoPlayer
 import dev.mj31.logger.client.app.features.logplayer.dependencies.LogPlayerFormatTools
@@ -12,7 +21,9 @@ import dev.mj31.logger.client.data.repository.InMemoryLogSessionRepository
 import dev.mj31.logger.client.data.repository.InMemorySyncRepository
 import dev.mj31.logger.client.data.repository.InMemoryVideoRepository
 import dev.mj31.logger.client.data.source.LocalTextFileDataSource
+import dev.mj31.logger.client.data.source.archive.LocalLogFileExpander
 import dev.mj31.logger.client.data.source.UuidIdGenerator
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
@@ -38,9 +49,9 @@ import dev.mj31.logger.client.app.usecase.ingest.ImportLogFileWithFormatUseCase
 import dev.mj31.logger.client.app.usecase.ingest.ImportLogFileUseCase
 import dev.mj31.logger.client.domain.model.log.LogLevel
 import dev.mj31.logger.client.data.format.preview.RegexLogFormatPreviewer
-import dev.mj31.logger.client.data.format.line.TemplateLogFormatCompiler
-import dev.mj31.logger.client.data.format.parse.RegexLogLineParserFactory
-import dev.mj31.logger.client.data.format.detect.HeuristicLogFormatDetector
+import dev.mj31.logger.client.data.format.line.ManualFormatCompiler
+import dev.mj31.logger.client.data.format.parse.DispatchingLogLineParserFactory
+import dev.mj31.logger.client.data.format.detect.StructureFirstLogFormatDetector
 import dev.mj31.logger.client.app.features.logplayer.state.LogPlayerStateAssembler
 import dev.mj31.logger.client.app.usecase.sync.manual.ParseFrameTimeUseCase
 import dev.mj31.logger.client.app.usecase.sync.manual.SynchronizeAtTimestampUseCase
@@ -133,8 +144,9 @@ class EndToEndSessionTest {
 
         // The dialog opens on the inferred layout, so applying it unchanged is the whole gesture.
         val suggested = requireNotNull(store.state.value.formatRequest)
-        assertThat(suggested.timestampPattern).isEqualTo("dd.MM.yyyy_HH.mm.ss")
-        assertThat(suggested.structureTemplate).isEqualTo("<{any}>~{timestamp}~{tag}~{message}")
+        val template = assertIs<ManualFormatInput.Template>(suggested.draft)
+        assertThat(template.timestampPattern).isEqualTo("dd.MM.yyyy_HH.mm.ss")
+        assertThat(template.structureTemplate).isEqualTo("<{any}>~{timestamp}~{tag}~{message}")
         assertThat(suggested.canApply).isTrue()
 
         store.handleIntent(intent = LogPlayerIntent.SubmitManualFormat)
@@ -201,15 +213,43 @@ class EndToEndSessionTest {
         assertThat(entries.all { it.matchesText(query = "SocketTimeout") }).isTrue()
     }
 
+    private fun expanderFor(dispatcher: CoroutineDispatcher): LocalLogFileExpander = LocalLogFileExpander(
+        cacheDirectory = File(System.getProperty("java.io.tmpdir"), "mjlogs-e2e-cache"),
+        dispatcher = dispatcher,
+    )
+
+    private fun importLogFile(
+        loader: LogSourceLoader,
+        expander: LocalLogFileExpander,
+        dispatcher: CoroutineDispatcher,
+    ): ImportLogFileUseCase = ImportLogFileUseCase(
+        loader = loader,
+        detector = StructureFirstLogFormatDetector(),
+        expander = expander,
+        resolveReferenceDate = REFERENCE_DATE_RESOLVER,
+        resolveStartDay = START_DAY_RESOLVER,
+        dispatcher = dispatcher,
+    )
+
+    private fun importWithFormat(
+        loader: LogSourceLoader,
+        expander: LocalLogFileExpander,
+        dispatcher: CoroutineDispatcher,
+    ): ImportLogFileWithFormatUseCase = ImportLogFileWithFormatUseCase(
+        loader = loader,
+        expander = expander,
+        resolveReferenceDate = REFERENCE_DATE_RESOLVER,
+        dispatcher = dispatcher,
+    )
+
     private fun buildStore(player: FakeVideoPlayer, testScope: TestScope): LogPlayerStore {
         val dispatcher = UnconfinedTestDispatcher(scheduler = testScope.testScheduler)
         val loader = LogSourceLoader(
             dataSource = LocalTextFileDataSource(dispatcher = dispatcher),
-            assembler = LogSourceAssembler(parserFactory = RegexLogLineParserFactory()),
+            assembler = LogSourceAssembler(parserFactory = DispatchingLogLineParserFactory()),
             idGenerator = UuidIdGenerator(),
-            clock = Clock.System,
-            timeZone = TimeZone.UTC,
         )
+        val expander = expanderFor(dispatcher = dispatcher)
         val syncRepository = InMemorySyncRepository()
         val repositories = LogPlayerRepositories(
             session = InMemoryLogSessionRepository(),
@@ -219,28 +259,16 @@ class EndToEndSessionTest {
         val parseFrameTime = ParseFrameTimeUseCase()
         return LogPlayerStore(
             repositories = repositories,
-            useCases = LogPlayerUseCases(
-                mergeLogSources = MergeLogSourcesUseCase(),
-                importLogFile = ImportLogFileUseCase(
-                    loader = loader,
-                    detector = HeuristicLogFormatDetector(),
-                    dispatcher = dispatcher,
-                ),
-                importLogFileWithFormat = ImportLogFileWithFormatUseCase(loader = loader, dispatcher = dispatcher),
-                filterLogEntries = FilterLogEntriesUseCase(),
-                synchronizeTimelines = SynchronizeTimelinesUseCase(syncRepository = syncRepository),
-                synchronizeAtTimestamp = SynchronizeAtTimestampUseCase(syncRepository = syncRepository),
+            useCases = useCasesFor(
+                loader = loader,
+                expander = expander,
+                repositories = repositories,
+                dispatcher = dispatcher,
                 parseFrameTime = parseFrameTime,
-                composeFrameTime = ComposeFrameTimeUseCase(parseFrameTime = parseFrameTime),
-                autoSynchronize = fakeAutoSynchronize(syncRepository = syncRepository),
-                stepVideoPosition = StepVideoPositionUseCase(),
-                clearSynchronization = ClearSynchronizationUseCase(syncRepository = syncRepository),
-                mapVideoPositionToLogTime = MapVideoPositionToLogTimeUseCase(),
-                mapLogTimeToVideoPosition = MapLogTimeToVideoPositionUseCase(),
             ),
             player = player,
             formatTools = LogPlayerFormatTools(
-                compiler = TemplateLogFormatCompiler(),
+                compiler = ManualFormatCompiler(),
                 previewer = RegexLogFormatPreviewer(),
             ),
             stateAssembler = LogPlayerStateAssembler(
@@ -248,6 +276,7 @@ class EndToEndSessionTest {
                 findEntryAtVideoPosition = FindEntryAtVideoPositionUseCase(),
                 mapVideoPositionToLogTime = MapVideoPositionToLogTimeUseCase(),
                 resolveTimelineOverlap = ResolveTimelineOverlapUseCase(),
+                resolveSyncZone = ResolveSyncZoneUseCase(),
             ),
             scope = CoroutineScope(context = testScope.backgroundScope.coroutineContext + dispatcher),
             defaultDispatcher = dispatcher,
@@ -260,7 +289,48 @@ class EndToEndSessionTest {
         )
     }
 
+    private fun useCasesFor(
+        loader: LogSourceLoader,
+        expander: LocalLogFileExpander,
+        repositories: LogPlayerRepositories,
+        dispatcher: CoroutineDispatcher,
+        parseFrameTime: ParseFrameTimeUseCase,
+    ): LogPlayerUseCases = LogPlayerUseCases(
+            mergeLogSources = MergeLogSourcesUseCase(),
+            importLogFile = importLogFile(loader = loader, expander = expander, dispatcher = dispatcher),
+            importLogFileWithFormat = importWithFormat(
+                loader = loader,
+                expander = expander,
+                dispatcher = dispatcher,
+            ),
+            filterLogEntries = FilterLogEntriesUseCase(),
+            synchronizeTimelines = SynchronizeTimelinesUseCase(syncRepository = repositories.sync),
+            synchronizeAtTimestamp = SynchronizeAtTimestampUseCase(syncRepository = repositories.sync),
+            parseFrameTime = parseFrameTime,
+            composeFrameTime = ComposeFrameTimeUseCase(parseFrameTime = parseFrameTime),
+            autoSynchronize = fakeAutoSynchronize(syncRepository = repositories.sync),
+            stepVideoPosition = StepVideoPositionUseCase(),
+            clearSynchronization = ClearSynchronizationUseCase(syncRepository = repositories.sync),
+            mapVideoPositionToLogTime = MapVideoPositionToLogTimeUseCase(),
+            mapLogTimeToVideoPosition = MapLogTimeToVideoPositionUseCase(),
+            changeSourceZone = ChangeSourceZoneUseCase(
+                rebuildSource = RebuildSourceUseCase(
+                    loader = loader,
+                    expander = expander,
+                    resolveReferenceDate = REFERENCE_DATE_RESOLVER,
+                    mergeParts = MergeSourcePartsUseCase(),
+                ),
+                sessionRepository = repositories.session,
+                dispatcher = dispatcher,
+            ),
+            resolveSyncZone = ResolveSyncZoneUseCase(),
+            detectDuplicate = DetectDuplicateUseCase(),
+            mergeSourceParts = MergeSourcePartsUseCase(),
+        )
+
     private companion object {
+        val REFERENCE_DATE_RESOLVER = ResolveReferenceDateUseCase(timeZone = TimeZone.UTC)
+        val START_DAY_RESOLVER = ResolveStartDayUseCase(timeZone = TimeZone.UTC)
         val SAMPLE_FILES = listOf("network.txt", "device-ui.txt", "backend-service.txt")
         const val CLIP_NAME = "sample-clip.mp4"
         const val EXOTIC_NAME = "analytics-custom.txt"

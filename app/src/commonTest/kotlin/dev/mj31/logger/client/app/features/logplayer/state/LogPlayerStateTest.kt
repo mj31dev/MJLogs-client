@@ -32,7 +32,7 @@ class LogPlayerStateTest {
         val request = request(preview = ready(matched = 1))
 
         assertThat(request.draft).isEqualTo(
-            ManualFormatInput(timestampPattern = "HH:mm:ss", structureTemplate = "{timestamp} {message}"),
+            ManualFormatInput.Template(timestampPattern = "HH:mm:ss", structureTemplate = "{timestamp} {message}"),
         )
     }
 
@@ -45,10 +45,16 @@ class LogPlayerStateTest {
     }
 
     @Test
-    fun `a blank input can never be applied`() {
-        val blank = request(preview = ready(matched = 1)).copy(timestampPattern = "  ")
+    fun `a description that reads nothing can never be applied`() {
+        // The preview runs the very parser the import would, so it — and not the state of the boxes —
+        // is what decides. A blank or broken input reaches here as an invalid preview.
+        val readsNothing = request(preview = ready(matched = 0))
+        val broken = request(
+            preview = FormatPreview.Invalid(message = "no", field = FormatErrorField.TIMESTAMP_PATTERN),
+        )
 
-        assertThat(blank.canApply).isFalse()
+        assertThat(readsNothing.canApply).isFalse()
+        assertThat(broken.canApply).isFalse()
     }
 
     @Test
@@ -93,8 +99,10 @@ class LogPlayerStateTest {
         fileName = "app.txt",
         sampleLines = listOf("line"),
         reason = "unknown",
-        timestampPattern = "HH:mm:ss",
-        structureTemplate = "{timestamp} {message}",
+        draft = ManualFormatInput.Template(
+            timestampPattern = "HH:mm:ss",
+            structureTemplate = "{timestamp} {message}",
+        ),
         preview = preview,
     )
 }

@@ -1,5 +1,9 @@
 package dev.mj31.logger.client.app.features.logplayer
 
+import dev.mj31.logger.client.app.features.logplayer.format.FormatSubmissionHandler
+import dev.mj31.logger.client.app.features.logplayer.zone.ZoneHandler
+import dev.mj31.logger.client.app.features.logplayer.duplicate.DuplicateHandler
+import dev.mj31.logger.client.app.features.logplayer.ingest.LogImportHandler
 import dev.mj31.logger.client.app.features.logplayer.format.FormatRequestHandler
 import dev.mj31.logger.client.app.features.logplayer.state.format.FormatError
 import dev.mj31.logger.client.app.features.logplayer.state.LogPlayerLocalState
@@ -7,6 +11,7 @@ import dev.mj31.logger.client.app.features.logplayer.state.LogPlayerState
 import dev.mj31.logger.client.app.features.logplayer.state.LogPlayerStateAssembler
 import dev.mj31.logger.client.app.features.logplayer.state.VideoSnapshot
 import dev.mj31.logger.client.app.usecase.ingest.LogImportResult
+import dev.mj31.logger.client.domain.model.time.SourceZone
 import dev.mj31.logger.client.domain.format.compile.FormatCompilationResult
 import dev.mj31.logger.client.domain.format.compile.FormatErrorField
 import dev.mj31.logger.client.domain.format.compile.ManualFormatInput
@@ -46,7 +51,6 @@ import dev.mj31.logger.client.app.features.logplayer.workspace.WorkspaceHandler
 import dev.mj31.logger.client.app.view.text.UiText
 import dev.mj31.logger.client.domain.model.log.LogSource
 import dev.mj31.logger.client.app.resources.Res
-import dev.mj31.logger.client.app.resources.message_import_success
 import dev.mj31.logger.client.app.resources.message_load_screencast_first
 import dev.mj31.logger.client.app.resources.message_record_outside_video
 import dev.mj31.logger.client.app.resources.message_select_record_first
@@ -84,6 +88,36 @@ class LogPlayerStore(
     /** The queue of files waiting for the user to describe their format. */
     private val formatRequests = FormatRequestHandler(local = local, formatTools = formatTools)
 
+    /** The last gate before the session: a file already open is not opened twice. */
+    private val duplicates = DuplicateHandler(
+        local = local,
+        sessionRepository = repositories.session,
+        detectDuplicate = useCases.detectDuplicate,
+        mergeParts = useCases.mergeSourceParts,
+        scope = scope,
+        emit = ::emit,
+    )
+
+    /** What the format dialog's two answers do. */
+    private val formatSubmission = FormatSubmissionHandler(
+        formatRequests = formatRequests,
+        formatTools = formatTools,
+        importLogFileWithFormat = useCases.importLogFileWithFormat,
+        duplicates = duplicates,
+        scope = scope,
+    )
+
+    /** Everything between a chosen path and a source in the session. */
+    private val logImports = LogImportHandler(
+        local = local,
+        importLogFile = useCases.importLogFile,
+        importLogFileWithFormat = useCases.importLogFileWithFormat,
+        duplicates = duplicates,
+        formatRequests = formatRequests,
+        scope = scope,
+        emit = ::emit,
+    )
+
     /** Everything about surviving a restart, kept out of here the way the automatic sync is. */
     private val workspaceHandler = WorkspaceHandler(
         local = local,
@@ -102,6 +136,7 @@ class LogPlayerStore(
         dispatcher = screenClockDispatcher,
         emit = ::emit,
         seekTo = player::seekTo,
+        syncZone = { syncZone().timeZone },
     )
 
     /** The screencast the automatic attempt has already been spent on, so it happens once per file. */
@@ -139,6 +174,16 @@ class LogPlayerStore(
         .map { sources -> useCases.mergeLogSources(sources = sources) }
         .flowOn(context = defaultDispatcher)
         .stateIn(scope = scope, started = SharingStarted.Eagerly, initialValue = LogSession.EMPTY)
+
+    /** Which zone a file, or the clock on the screen, is read in. */
+    private val zones = ZoneHandler(
+        local = local,
+        session = session,
+        changeSourceZone = useCases.changeSourceZone,
+        resolveSyncZone = useCases.resolveSyncZone,
+        scope = scope,
+        emit = ::emit,
+    )
 
     private val visibleEntries: StateFlow<List<LogEntry>> = combine(
         session,
@@ -228,45 +273,33 @@ class LogPlayerStore(
             LogPlayerIntent.RequestVideoImport -> emit(effect = LogPlayerEffect.PickVideoFile)
             LogPlayerIntent.RequestLogImport -> emit(effect = LogPlayerEffect.PickLogFiles)
             is LogPlayerIntent.ImportVideo -> importVideo(path = intent.path)
-            is LogPlayerIntent.ImportLogFiles -> importLogFiles(paths = intent.paths)
-            is LogPlayerIntent.UpdateFormatDraft -> formatRequests.updateDraft(
-                draft = ManualFormatInput(
-                    timestampPattern = intent.timestampPattern,
-                    structureTemplate = intent.structureTemplate,
-                ),
-            )
+            is LogPlayerIntent.ImportLogFiles -> logImports.importAll(paths = intent.paths)
 
-            LogPlayerIntent.SubmitManualFormat -> submitManualFormat()
+            LogPlayerIntent.ConfirmUnsupportedImport -> logImports.confirmUnsupported()
+            LogPlayerIntent.DismissUnsupportedImport -> logImports.dismissUnsupported()
+            is LogPlayerIntent.ChooseStartDay -> logImports.chooseStartDay(day = intent.day)
+            LogPlayerIntent.DismissStartDayRequest -> logImports.dismissStartDay()
+            is LogPlayerIntent.ResolveDuplicate -> duplicates.resolve(choice = intent.choice)
+            is LogPlayerIntent.ShowSourcePreamble -> local.update { it.copy(preambleSourceId = intent.sourceId) }
+            LogPlayerIntent.DismissSourcePreamble -> local.update { it.copy(preambleSourceId = null) }
+            is LogPlayerIntent.UpdateFormatDraft -> formatRequests.updateDraft(draft = intent.draft)
+            is LogPlayerIntent.SelectFormatKind -> formatRequests.selectKind(kind = intent.kind)
 
-            LogPlayerIntent.AcceptDetectedFormat -> acceptDetectedFormat()
+            LogPlayerIntent.SubmitManualFormat -> formatSubmission.submit()
+
+            LogPlayerIntent.AcceptDetectedFormat -> formatSubmission.acceptDetected()
             LogPlayerIntent.DismissFormatRequest -> formatRequests.dropHead()
             is LogPlayerIntent.UpdateFilter -> local.update { it.copy(filter = intent.filter) }
             is LogPlayerIntent.SetTimeWindow -> local.update { it.copy(timeWindowMillis = intent.windowMillis) }
             is LogPlayerIntent.SelectEntry -> selectEntry(entryId = intent.entryId)
             LogPlayerIntent.TogglePlayback -> togglePlayback()
             is LogPlayerIntent.Seek -> player.seekTo(positionMillis = intent.positionMillis)
-            is LogPlayerIntent.StepVideo -> player.seekTo(
-                positionMillis = useCases.stepVideoPosition(
-                    playback = player.state.value,
-                    step = intent.step,
-                    steps = intent.steps,
-                ),
-            )
+            is LogPlayerIntent.StepVideo -> stepVideo(intent = intent)
             LogPlayerIntent.Synchronize -> synchronize()
             is LogPlayerIntent.UpdateFrameTime -> local.update {
                 it.copy(frameTime = intent.text, frameTimeError = false)
             }
-            is LogPlayerIntent.PickFrameTime -> local.update {
-                it.copy(
-                    frameTime = useCases.composeFrameTime(
-                        dateMillis = intent.dateMillis,
-                        hour = intent.hour,
-                        minute = intent.minute,
-                        previousText = it.frameTime,
-                    ),
-                    frameTimeError = false,
-                )
-            }
+            is LogPlayerIntent.PickFrameTime -> pickFrameTime(intent = intent)
             LogPlayerIntent.SynchronizeAtFrameTime -> synchronizeAtFrameTime()
             LogPlayerIntent.ClearSynchronization -> scope.launch { useCases.clearSynchronization() }
             is LogPlayerIntent.SetFollowVideo -> local.update { it.copy(followVideo = intent.enabled) }
@@ -285,8 +318,38 @@ class LogPlayerStore(
             LogPlayerIntent.CancelClockRegion -> local.update { it.copy(isSelectingClockRegion = false) }
             LogPlayerIntent.CancelAutoSync -> autoSync.cancel()
             is LogPlayerIntent.Workspace -> handleWorkspaceIntent(intent = intent)
+            is LogPlayerIntent.Zone -> zones.handle(intent = intent)
         }
     }
+
+    private fun stepVideo(intent: LogPlayerIntent.StepVideo) {
+        player.seekTo(
+            positionMillis = useCases.stepVideoPosition(
+                playback = player.state.value,
+                step = intent.step,
+                steps = intent.steps,
+            ),
+        )
+    }
+
+    /** The picker hands over a day and a time; the text already typed decides what is kept of it. */
+    private fun pickFrameTime(intent: LogPlayerIntent.PickFrameTime) {
+        local.update {
+            it.copy(
+                frameTime = useCases.composeFrameTime(
+                    dateMillis = intent.dateMillis,
+                    hour = intent.hour,
+                    minute = intent.minute,
+                    previousText = it.frameTime,
+                    timeZone = syncZone().timeZone,
+                ),
+                frameTimeError = false,
+            )
+        }
+    }
+
+    /** The zone the screen's clock is read in. */
+    private fun syncZone(): SourceZone = zones.syncZone()
 
     /** The workspace-as-a-file family, delegated whole to the collaborator that owns persistence. */
     private fun handleWorkspaceIntent(intent: LogPlayerIntent.Workspace) {
@@ -317,26 +380,6 @@ class LogPlayerStore(
         if (player.state.value.isPlaying) player.pause() else player.play()
     }
 
-    private fun acceptDetectedFormat() {
-        val source = formatRequests.head?.detectedSource ?: return
-        scope.launch {
-            repositories.session.addSource(source = source)
-            formatRequests.dropHead()
-            emit(
-                effect = LogPlayerEffect.ShowMessage(text = importedMessage(source = source)),
-            )
-        }
-    }
-
-    private fun importLogFiles(paths: List<String>) {
-        if (paths.isEmpty()) return
-        scope.launch {
-            local.update { it.copy(isImporting = true) }
-            paths.forEach { path -> handleImportResult(result = useCases.importLogFile(path = path)) }
-            local.update { it.copy(isImporting = false) }
-        }
-    }
-
     private fun importVideo(path: String) {
         val media = VideoMedia(
             path = path,
@@ -364,43 +407,11 @@ class LogPlayerStore(
     }
 
 
-    private fun submitManualFormat() {
-        val request = formatRequests.head ?: return
-        when (val compiled = formatTools.compiler.compile(input = request.draft)) {
-            is FormatCompilationResult.Failure -> formatRequests.showError(
-                error = FormatError(message = compiled.message, field = compiled.field),
-            )
-
-            is FormatCompilationResult.Success -> scope.launch {
-                when (val result = useCases.importLogFileWithFormat(path = request.path, spec = compiled.spec)) {
-                    is LogImportResult.Success -> {
-                        repositories.session.addSource(source = result.source)
-                        formatRequests.dropHead()
-                    }
-
-                    // A format the user wrote themselves needs no confirmation of what it leaves out.
-                    is LogImportResult.NeedsConfirmation -> {
-                        repositories.session.addSource(source = result.source)
-                        formatRequests.dropHead()
-                    }
-
-                    // Neither input is syntactically wrong: the format simply does not fit the file.
-                    is LogImportResult.Failure -> formatRequests.showError(
-                        error = FormatError(message = result.message, field = FormatErrorField.NONE),
-                    )
-
-                    is LogImportResult.FormatRequired -> formatRequests.showError(
-                        error = FormatError(message = result.reason, field = FormatErrorField.NONE),
-                    )
-                }
-            }
-        }
-    }
-
     /** Selecting a record moves the video too, but only once the timelines have been synchronized. */
     private fun selectEntry(entryId: String?) {
-        local.update { it.copy(selectedEntryId = entryId) }
-        val entry = entryId?.let { id -> visibleEntries.value.firstOrNull { it.id == id } } ?: return
+        val entry = entryId?.let { id -> visibleEntries.value.firstOrNull { it.id == id } }
+        local.update { it.copy(selectedEntryId = entryId, selectedSourceId = entry?.sourceId) }
+        if (entry == null) return
         if (!local.value.followVideo) return
         val anchor = repositories.sync.syncState.value.anchorOrNull ?: return
         val position = useCases.mapLogTimeToVideoPosition(
@@ -467,9 +478,11 @@ class LogPlayerStore(
             )
             return
         }
+        val zone = syncZone().timeZone
         val timestamp = useCases.parseFrameTime(
             text = local.value.frameTime,
-            referenceDate = session.value.timeRange?.start?.toLocalDateTime(timeZone = TimeZone.UTC)?.date,
+            referenceDate = session.value.timeRange?.start?.toLocalDateTime(timeZone = zone)?.date,
+            timeZone = zone,
         )
         if (timestamp == null) {
             local.update { it.copy(frameTimeError = true) }
@@ -483,25 +496,9 @@ class LogPlayerStore(
                 effect = LogPlayerEffect.ShowMessage(
                     text = UiText.Resource(
                         resource = Res.string.message_synchronized_with_time,
-                        arguments = listOf(formatLogDateTime(instant = timestamp)),
+                        arguments = listOf(formatLogDateTime(instant = timestamp, timeZone = zone)),
                     ),
                 ),
-            )
-        }
-    }
-    private suspend fun handleImportResult(result: LogImportResult) {
-        when (result) {
-            is LogImportResult.Success -> {
-                repositories.session.addSource(source = result.source)
-                emit(effect = LogPlayerEffect.ShowMessage(text = importedMessage(source = result.source)))
-            }
-
-            is LogImportResult.FormatRequired -> formatRequests.enqueue(result = result)
-
-            is LogImportResult.NeedsConfirmation -> formatRequests.enqueue(result = result)
-
-            is LogImportResult.Failure -> emit(
-                effect = LogPlayerEffect.ShowMessage(text = UiText.Raw(value = result.message), isError = true),
             )
         }
     }
@@ -514,10 +511,4 @@ class LogPlayerStore(
         const val WINDOW_TICK_MILLIS = 1_000L
     }
 }
-
-/** Confirmation shown once a file has been read: what was imported, and under which format. */
-private fun importedMessage(source: LogSource): UiText = UiText.Resource(
-    resource = Res.string.message_import_success,
-    arguments = listOf(source.name, source.entryCount, source.format.name),
-)
 

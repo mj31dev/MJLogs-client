@@ -1,7 +1,14 @@
 package dev.mj31.logger.client.app.view.format
 
 import kotlin.time.Instant
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.format
+import kotlinx.datetime.format.DateTimeFormat
+import kotlinx.datetime.format.DayOfWeekNames
+import kotlinx.datetime.format.MonthNames
+import kotlinx.datetime.format.Padding
+import kotlinx.datetime.format.char
 import kotlinx.datetime.toLocalDateTime
 
 private const val MILLIS_PER_SECOND = 1_000L
@@ -61,6 +68,25 @@ fun formatWallClock(instant: Instant, timeZone: TimeZone = TimeZone.currentSyste
     val time = instant.toLocalDateTime(timeZone = timeZone)
     return "${time.year}-${time.monthNumber.pad(length = PAD_TWO)}-${time.dayOfMonth.pad(length = PAD_TWO)} " +
         "${time.hour.pad(length = PAD_TWO)}:${time.minute.pad(length = PAD_TWO)}"
+}
+
+/**
+ * The written-out calendar date: `Wednesday, 12 August 2026`.
+ *
+ * Kept beside the machine forms rather than folded into them because it answers a different
+ * question. `2026-08-12` says which date a record carries; this says which day a person lived
+ * through, and the weekday is most of that — nobody remembers a recording by its day number.
+ */
+fun formatCalendarDate(date: LocalDate): String = date.format(format = CalendarDate)
+
+private val CalendarDate: DateTimeFormat<LocalDate> = LocalDate.Format {
+    dayOfWeek(names = DayOfWeekNames.ENGLISH_FULL)
+    chars(value = ", ")
+    day(padding = Padding.NONE)
+    char(value = ' ')
+    monthName(names = MonthNames.ENGLISH_FULL)
+    char(value = ' ')
+    year()
 }
 
 /**

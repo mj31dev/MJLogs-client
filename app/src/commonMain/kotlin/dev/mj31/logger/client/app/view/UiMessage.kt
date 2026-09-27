@@ -1,5 +1,7 @@
 package dev.mj31.logger.client.app.view
 
+import androidx.compose.foundation.BorderStroke
+import dev.mj31.logger.client.app.theme.Spacing
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -35,8 +37,9 @@ data class UiMessage(
  * It floats over the workspace rather than sitting in the column with it. A notice that takes part
  * in the layout resizes everything below it the instant it appears and again when it goes, and the
  * two panes it shifts are the ones the user is reading — so a message about something that just
- * happened would move the very thing it is describing. Hence the shadow: it has to read as being
- * above the content, not spliced into it.
+ * happened would move the very thing it is describing. It has to read as being above the content,
+ * not spliced into it, and like every other floating surface here it says so with its colour and an
+ * outline rather than a shadow, which over a video frame reads as a rendering artefact.
  */
 @Composable
 fun MessageBar(message: UiMessage, onDismiss: () -> Unit, modifier: Modifier = Modifier) {
@@ -54,10 +57,10 @@ fun MessageBar(message: UiMessage, onDismiss: () -> Unit, modifier: Modifier = M
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = background,
-        shadowElevation = ELEVATION.dp,
+        border = BorderStroke(width = BORDER_WIDTH.dp, color = MaterialTheme.colorScheme.outline),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            modifier = Modifier.padding(horizontal = Spacing.large, vertical = Spacing.tight),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -71,4 +74,4 @@ fun MessageBar(message: UiMessage, onDismiss: () -> Unit, modifier: Modifier = M
     }
 }
 
-private const val ELEVATION = 6
+private const val BORDER_WIDTH = 1

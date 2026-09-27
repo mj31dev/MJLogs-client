@@ -87,15 +87,19 @@ internal class SessionPackageReader(
         }
     }
 
+    private fun extractedPath(path: String, extracted: File): String =
+        if (SessionPackageLayout.isBundledEntry(path = path)) File(extracted, path).absolutePath else path
+
     /** Points the stored workspace at the copies just unpacked. */
     private fun resolve(snapshot: WorkspaceSnapshot, extracted: File): WorkspaceSnapshot {
         return snapshot.copy(
             logSources = snapshot.logSources.map { ref ->
-                if (SessionPackageLayout.isBundledEntry(path = ref.path)) {
-                    ref.copy(path = File(extracted, ref.path).absolutePath)
-                } else {
-                    ref
-                }
+                ref.copy(
+                    path = extractedPath(path = ref.path, extracted = extracted),
+                    extraParts = ref.extraParts.map { part ->
+                        part.copy(path = extractedPath(path = part.path, extracted = extracted))
+                    },
+                )
             },
             video = snapshot.video?.let { media ->
                 if (SessionPackageLayout.isBundledEntry(path = media.path)) {

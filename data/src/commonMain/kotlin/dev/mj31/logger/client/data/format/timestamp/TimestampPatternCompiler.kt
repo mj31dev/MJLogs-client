@@ -23,6 +23,10 @@ object TimestampPatternCompiler {
         TimestampPatternTokens.MONTH to TokenDefinition(field = TimestampField.MONTH, regex = "\\d{2}"),
         TimestampPatternTokens.DAY to TokenDefinition(field = TimestampField.DAY, regex = "\\d{2}"),
         TimestampPatternTokens.HOUR to TokenDefinition(field = TimestampField.HOUR, regex = "\\d{2}"),
+        // A twelve hour clock is routinely written without the leading zero, so one digit is allowed.
+        TimestampPatternTokens.HOUR_12 to TokenDefinition(field = TimestampField.HOUR_12, regex = "\\d{1,2}"),
+        TimestampPatternTokens.MERIDIEM to
+            TokenDefinition(field = TimestampField.MERIDIEM, regex = "[AaPp]\\.?[Mm]\\.?"),
         TimestampPatternTokens.MINUTE to TokenDefinition(field = TimestampField.MINUTE, regex = "\\d{2}"),
         TimestampPatternTokens.SECOND to TokenDefinition(field = TimestampField.SECOND, regex = "\\d{2}"),
     )

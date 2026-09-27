@@ -1,5 +1,10 @@
 package dev.mj31.logger.client.app.features.logplayer.dependencies
 
+import dev.mj31.logger.client.app.usecase.ingest.duplicate.MergeSourcePartsUseCase
+import dev.mj31.logger.client.app.usecase.ingest.duplicate.DetectDuplicateUseCase
+import dev.mj31.logger.client.app.usecase.ingest.zone.ChangeSourceZoneUseCase
+import dev.mj31.logger.client.app.usecase.sync.ResolveSyncZoneUseCase
+
 import dev.mj31.logger.client.app.usecase.ingest.ImportLogFileUseCase
 import dev.mj31.logger.client.app.usecase.ingest.ImportLogFileWithFormatUseCase
 import dev.mj31.logger.client.app.usecase.session.FilterLogEntriesUseCase
@@ -29,4 +34,8 @@ data class LogPlayerUseCases(
     val clearSynchronization: ClearSynchronizationUseCase,
     val mapVideoPositionToLogTime: MapVideoPositionToLogTimeUseCase,
     val mapLogTimeToVideoPosition: MapLogTimeToVideoPositionUseCase,
+    val changeSourceZone: ChangeSourceZoneUseCase,
+    val resolveSyncZone: ResolveSyncZoneUseCase,
+    val detectDuplicate: DetectDuplicateUseCase,
+    val mergeSourceParts: MergeSourcePartsUseCase,
 )

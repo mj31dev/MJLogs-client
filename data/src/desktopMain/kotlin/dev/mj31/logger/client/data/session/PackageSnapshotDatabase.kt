@@ -19,13 +19,18 @@ internal class PackageSnapshotDatabase(private val dispatcher: CoroutineDispatch
             dao.replaceWorkspace(
                 workspace = WorkspaceMapping.toEntity(snapshot = snapshot),
                 sources = WorkspaceMapping.toEntities(sources = snapshot.logSources),
+                parts = WorkspaceMapping.toPartEntities(sources = snapshot.logSources),
             )
         }
     }
 
     suspend fun read(databasePath: String): WorkspaceSnapshot? = withDatabase(databasePath = databasePath) { dao ->
         val workspace = dao.loadWorkspace() ?: return@withDatabase null
-        WorkspaceMapping.toSnapshot(workspace = workspace, sources = dao.loadLogSources())
+        WorkspaceMapping.toSnapshot(
+            workspace = workspace,
+            sources = dao.loadLogSources(),
+            parts = dao.loadLogSourceParts(),
+        )
     }
 
     /**

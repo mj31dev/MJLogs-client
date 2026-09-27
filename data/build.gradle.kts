@@ -48,6 +48,7 @@ kotlin {
                 api(project(":domain"))
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.kotlinx.datetime)
+                implementation(libs.kotlinx.serialization.json)
             }
         }
 

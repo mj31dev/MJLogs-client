@@ -1,5 +1,6 @@
 package dev.mj31.logger.client.app.usecase.sync.manual
 
+import kotlinx.datetime.TimeZone
 import com.google.common.truth.Truth.assertThat
 import kotlin.time.Instant
 import kotlin.test.Test
@@ -55,5 +56,18 @@ class ComposeFrameTimeUseCaseTest {
     private companion object {
         /** Midnight UTC of 2026-06-29, which is what a date picker reports for that day. */
         val DAY_MILLIS: Long = Instant.parse("2026-06-29T00:00:00Z").toEpochMilliseconds()
+    }
+
+    @Test
+    fun `seconds typed in another zone survive the picking in that zone`() {
+        val text = useCase(
+            dateMillis = DAY_MILLIS,
+            hour = 18,
+            minute = 50,
+            previousText = "2026-06-29 12:00:07.267",
+            timeZone = TimeZone.of(zoneId = "UTC+05:00"),
+        )
+
+        assertThat(text).isEqualTo("2026-06-29 18:50:07.267")
     }
 }

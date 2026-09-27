@@ -8,12 +8,12 @@ import kotlinx.datetime.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertIs
 import dev.mj31.logger.client.domain.model.log.LogLevel
-import dev.mj31.logger.client.data.format.parse.RegexLogLineParserFactory
+import dev.mj31.logger.client.data.format.parse.DispatchingLogLineParserFactory
 
 class HeuristicLogFormatDetectorTest {
 
     private val detector = HeuristicLogFormatDetector()
-    private val factory = RegexLogLineParserFactory()
+    private val factory = DispatchingLogLineParserFactory()
 
     @Test
     fun `detects an ISO-8601 format with level and tag`() {
@@ -197,6 +197,46 @@ class HeuristicLogFormatDetectorTest {
         val detected = assertIs<FormatDetectionResult.Detected>(detector.detect(sampleLines = lines))
 
         assertThat(detected.confidence).isWithin(TOLERANCE).of(0.75f)
+    }
+
+    @Test
+    fun `lines before the first record do not count against a format`() {
+        val lines = listOf(
+            "=== MyApp 1.4.2 ===",
+            "Device: Pixel 8, Android 15",
+            "Log started",
+            "2024-01-15 10:23:45.123 INFO  [MainActivity] Application started",
+            "2024-01-15 10:23:45.456 DEBUG [MainActivity] Restoring state",
+            "2024-01-15 10:23:46.001 WARN  [SyncWorker] Sync postponed",
+        )
+
+        val detected = assertIs<FormatDetectionResult.Detected>(detector.detect(sampleLines = lines))
+
+        assertThat(detected.confidence).isWithin(TOLERANCE).of(1.0f)
+    }
+
+    @Test
+    fun `a preamble longer than the allowance still counts against the format`() {
+        val preamble = List(size = HeuristicLogFormatDetector.MAX_PREAMBLE_LINES + 1) { index -> "banner line $index" }
+        val records = List(size = 3) { index -> "2024-01-15 10:23:4$index.123 INFO  [Main] record $index" }
+
+        val result = detector.detect(sampleLines = preamble + records)
+
+        assertIs<FormatDetectionResult.Undetermined>(result)
+    }
+
+    @Test
+    fun `an undetermined preview starts past a preamble`() {
+        val lines = listOf(
+            "Exported by LogTool",
+            "Device: Pixel 8",
+            "<0001>~01.08.2026_10.23.45~ANALYTICS~event dispatched",
+            "<0002>~01.08.2026_10.23.46~ANALYTICS~event dispatched",
+        )
+
+        val undetermined = assertIs<FormatDetectionResult.Undetermined>(detector.detect(sampleLines = lines))
+
+        assertThat(undetermined.sampleLines.first()).isEqualTo("<0001>~01.08.2026_10.23.45~ANALYTICS~event dispatched")
     }
 
     @Test

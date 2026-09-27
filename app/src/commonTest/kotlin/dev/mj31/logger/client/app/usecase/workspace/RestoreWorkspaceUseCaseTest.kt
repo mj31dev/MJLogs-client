@@ -1,5 +1,10 @@
 package dev.mj31.logger.client.app.usecase.workspace
 
+import dev.mj31.logger.client.domain.model.log.part.LogSourcePart
+import dev.mj31.logger.client.app.usecase.ingest.source.RebuildSourceUseCase
+import dev.mj31.logger.client.app.usecase.ingest.duplicate.MergeSourcePartsUseCase
+import dev.mj31.logger.client.app.usecase.ingest.date.ResolveReferenceDateUseCase
+import dev.mj31.logger.client.app.fake.source.FakeLogFileExpander
 import com.google.common.truth.Truth.assertThat
 import dev.mj31.logger.client.app.fake.format.ScriptedLogLineParser
 import dev.mj31.logger.client.app.fake.format.ScriptedLogLineParserFactory
@@ -32,12 +37,15 @@ class RestoreWorkspaceUseCaseTest {
     private val syncRepository = InMemorySyncRepository()
 
     private val useCase = RestoreWorkspaceUseCase(
-        loader = LogSourceLoader(
-            dataSource = files,
-            assembler = LogSourceAssembler(parserFactory = ScriptedLogLineParserFactory()),
-            idGenerator = FixedIdGenerator(),
-            clock = FixedClock(instant = TestLogEntries.at(offsetMillis = 0L)),
-            timeZone = TimeZone.UTC,
+        rebuildSource = RebuildSourceUseCase(
+            loader = LogSourceLoader(
+                dataSource = files,
+                assembler = LogSourceAssembler(parserFactory = ScriptedLogLineParserFactory()),
+                idGenerator = FixedIdGenerator(),
+            ),
+            expander = FakeLogFileExpander(),
+            resolveReferenceDate = ResolveReferenceDateUseCase(timeZone = TimeZone.UTC),
+            mergeParts = MergeSourcePartsUseCase(),
         ),
         sessionRepository = sessionRepository,
         videoRepository = videoRepository,
@@ -79,6 +87,48 @@ class RestoreWorkspaceUseCaseTest {
         assertThat(result.missingFileNames).containsExactly("gone.txt")
         assertThat(result.restoredSourceCount).isEqualTo(1)
         assertThat(sessionRepository.sources.value).hasSize(1)
+    }
+
+    /**
+     * A merged source is read again from every file and merged again in the stored order, which is
+     * what gives its records back the ids a stored anchor points at.
+     */
+    @Test
+    fun `a merged source comes back from all its files with the same record ids`() = runTest {
+        register(path = "/logs/a.txt", messages = listOf("First", "Second"))
+        register(path = "/logs/a.1.txt", messages = listOf("First", "Second", "Third"))
+        val merged = snapshot(paths = listOf("/logs/a.txt")).let { snapshot ->
+            snapshot.copy(
+                logSources = snapshot.logSources.map { ref ->
+                    ref.copy(extraParts = listOf(LogSourcePart(path = "/logs/a.1.txt", name = "a.1.txt", referenceDate = null)))
+                },
+            )
+        }
+
+        useCase(snapshot = merged)
+
+        val source = sessionRepository.sources.value.single()
+        assertThat(source.entries.map { it.message }).containsExactly("First", "Second", "Third").inOrder()
+        assertThat(source.entries.last().id).isEqualTo("stored-/logs/a.txt:1:3")
+        assertThat(source.paths).containsExactly("/logs/a.txt", "/logs/a.1.txt").inOrder()
+    }
+
+    @Test
+    fun `a merged part that went missing is left out and the rest of the source opens`() = runTest {
+        register(path = "/logs/a.txt", messages = listOf("First"))
+        files.registerFailure(path = "/logs/a.1.txt", error = IllegalStateException("no such file"))
+        val merged = snapshot(paths = listOf("/logs/a.txt")).let { snapshot ->
+            snapshot.copy(
+                logSources = snapshot.logSources.map { ref ->
+                    ref.copy(extraParts = listOf(LogSourcePart(path = "/logs/a.1.txt", name = "a.1.txt", referenceDate = null)))
+                },
+            )
+        }
+
+        val result = useCase(snapshot = merged)
+
+        assertThat(result.restoredSourceCount).isEqualTo(1)
+        assertThat(sessionRepository.sources.value.single().extraParts).isEmpty()
     }
 
     @Test

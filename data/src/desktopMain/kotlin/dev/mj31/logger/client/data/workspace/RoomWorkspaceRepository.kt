@@ -18,10 +18,15 @@ class RoomWorkspaceRepository(
 ) : WorkspaceRepository {
 
     private val dao = database.workspaceDao()
+    private val recentDao = database.recentPackageDao()
 
     override suspend fun loadLastWorkspace(): WorkspaceSnapshot? = withContext(context = dispatcher) {
         val workspace = dao.loadWorkspace() ?: return@withContext null
-        WorkspaceMapping.toSnapshot(workspace = workspace, sources = dao.loadLogSources())
+        WorkspaceMapping.toSnapshot(
+            workspace = workspace,
+            sources = dao.loadLogSources(),
+            parts = dao.loadLogSourceParts(),
+        )
     }
 
     override suspend fun saveLastWorkspace(snapshot: WorkspaceSnapshot) {
@@ -29,6 +34,7 @@ class RoomWorkspaceRepository(
             dao.replaceWorkspace(
                 workspace = WorkspaceMapping.toEntity(snapshot = snapshot),
                 sources = WorkspaceMapping.toEntities(sources = snapshot.logSources),
+                parts = WorkspaceMapping.toPartEntities(sources = snapshot.logSources),
             )
         }
     }
@@ -39,12 +45,12 @@ class RoomWorkspaceRepository(
         }
     }
 
-    override val recentPackages: Flow<List<RecentPackage>> = dao.observeRecentPackages()
+    override val recentPackages: Flow<List<RecentPackage>> = recentDao.observeRecentPackages()
         .map { entities -> entities.mapNotNull(::toRecent) }
 
     override suspend fun rememberPackage(entry: RecentPackage) {
         withContext(context = dispatcher) {
-            dao.upsertRecentPackage(
+            recentDao.upsertRecentPackage(
                 entry = RecentPackageEntity(
                     path = entry.path,
                     name = entry.name,
@@ -55,7 +61,7 @@ class RoomWorkspaceRepository(
     }
 
     override suspend fun forgetPackage(path: String) {
-        withContext(context = dispatcher) { dao.deleteRecentPackage(path = path) }
+        withContext(context = dispatcher) { recentDao.deleteRecentPackage(path = path) }
     }
 
     private fun toRecent(entity: RecentPackageEntity): RecentPackage = RecentPackage(

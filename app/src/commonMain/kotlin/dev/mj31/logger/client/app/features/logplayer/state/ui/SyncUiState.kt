@@ -1,5 +1,7 @@
 package dev.mj31.logger.client.app.features.logplayer.state.ui
 
+import dev.mj31.logger.client.domain.model.time.SourceZone
+
 import dev.mj31.logger.client.app.usecase.timeline.TimelineOverlap
 import dev.mj31.logger.client.domain.sync.SyncOrigin
 import kotlin.time.Instant
@@ -21,4 +23,6 @@ data class SyncUiState(
     val canSynchronizeAtFrameTime: Boolean = false,
     /** Moment the picker opens on: the typed time when it is readable, else the session start. */
     val frameTimeDefault: Instant? = null,
+    /** The zone the screen's clock is read in, and so the one sync times are shown in. */
+    val zone: SourceZone = SourceZone.UTC,
 )

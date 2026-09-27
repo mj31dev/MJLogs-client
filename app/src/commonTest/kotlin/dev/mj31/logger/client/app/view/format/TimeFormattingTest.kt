@@ -2,6 +2,7 @@ package dev.mj31.logger.client.app.view.format
 
 import com.google.common.truth.Truth.assertThat
 import kotlin.time.Instant
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlin.test.Test
 
@@ -81,5 +82,19 @@ class TimeFormattingTest {
 
         assertThat(formatWallClock(instant = instant, timeZone = TimeZone.of(zoneId = "Europe/Moscow")))
             .isEqualTo("2024-01-06 01:30")
+    }
+
+    /** A date offered as a choice is read, not parsed, so it is written out and led by the weekday. */
+    @Test
+    fun `a calendar date is written out with its weekday`() {
+        assertThat(formatCalendarDate(date = LocalDate(year = 2026, monthNumber = 8, dayOfMonth = 12)))
+            .isEqualTo("Wednesday, 12 August 2026")
+    }
+
+    /** The day is the number it is: `5 August`, never `05 August`. */
+    @Test
+    fun `a single digit day carries no padding`() {
+        assertThat(formatCalendarDate(date = LocalDate(year = 2026, monthNumber = 8, dayOfMonth = 5)))
+            .isEqualTo("Wednesday, 5 August 2026")
     }
 }

@@ -1,5 +1,6 @@
 package dev.mj31.logger.client.app.features.logplayer
 
+import dev.mj31.logger.client.app.features.logplayer.LogPlayerIntent
 import com.google.common.truth.Truth.assertThat
 import dev.mj31.logger.client.app.fake.LogPlayerFixtures
 import dev.mj31.logger.client.app.fake.LogPlayerRobot
@@ -103,14 +104,42 @@ class LogPlayerStorePlaybackTest {
     }
 
     @Test
-    fun `a log file of an unsupported type is refused by the import`() = runTest {
+    fun `a log file of an unsupported type is put to the user rather than refused outright`() = runTest {
         val robot = LogPlayerRobot.create(testScope = this)
 
         robot.importLogFiles(paths = listOf("/media/screencast.mp4"))
 
-        assertThat((robot.lastMessage as UiText.Raw).value).contains("screencast.mp4")
+        // Nothing is imported on its own, but the refusal is a question: a log carries no reserved
+        // extension, and the person who chose the file may know what it is.
         assertThat(robot.state.sources).isEmpty()
         assertThat(robot.state.formatRequest).isNull()
+        assertThat(robot.state.unsupportedImport?.fileName).isEqualTo("screencast.mp4")
+    }
+
+    @Test
+    fun `insisting on an unsupported file imports it`() = runTest {
+        val robot = LogPlayerRobot.create(testScope = this)
+        robot.detector.enqueueDetected(spec = LogPlayerFixtures.FIRST_SPEC)
+        robot.files.register(
+            content = LogPlayerFixtures.firstFile.copy(path = "/logs/dmesg", name = "dmesg"),
+        )
+
+        robot.importLogFiles(paths = listOf("/logs/dmesg"))
+        robot.dispatch(intent = LogPlayerIntent.ConfirmUnsupportedImport)
+
+        assertThat(robot.state.unsupportedImport).isNull()
+        assertThat(robot.state.sources.map { it.name }).containsExactly("dmesg")
+    }
+
+    @Test
+    fun `declining an unsupported file leaves the workspace untouched`() = runTest {
+        val robot = LogPlayerRobot.create(testScope = this)
+
+        robot.importLogFiles(paths = listOf("/media/screencast.mp4"))
+        robot.dispatch(intent = LogPlayerIntent.DismissUnsupportedImport)
+
+        assertThat(robot.state.unsupportedImport).isNull()
+        assertThat(robot.state.sources).isEmpty()
     }
 
     @Test

@@ -1,5 +1,6 @@
 package dev.mj31.logger.client.app.usecase.sync.auto
 
+import kotlinx.datetime.TimeZone
 import com.google.common.truth.Truth.assertThat
 import dev.mj31.logger.client.app.usecase.sync.auto.zone.ResolveClockAnchorUseCase
 import dev.mj31.logger.client.domain.model.time.TimeRange
@@ -155,5 +156,22 @@ class ResolveClockAnchorUseCaseTest {
     private companion object {
         const val POSITION = 17_000L
         const val MINUTE = 60_000L
+    }
+
+    /**
+     * A phone in Berlin shows `11:28` beside logs recorded at 09:28 UTC: the screen is read in the
+     * zone of the logs, so the two meet instead of lying two hours apart.
+     */
+    @Test
+    fun `the screen is read in the zone of the logs beside it`() {
+        val anchor = resolve(
+            boundary = reading(hour = 11, minute = 28),
+            logRange = range(from = "2026-08-08T09:20:00Z", to = "2026-08-08T09:40:00Z"),
+            videoDurationMillis = MINUTE * 2,
+            accuracyMillis = 300L,
+            timeZone = TimeZone.of(zoneId = "Europe/Berlin"),
+        )
+
+        assertThat(anchor.logTimestamp).isEqualTo(Instant.parse(input = "2026-08-08T09:28:00Z"))
     }
 }

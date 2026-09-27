@@ -95,15 +95,15 @@ object BuiltInLogFormats {
     )
 
     /** Every candidate specification, ordered by decreasing preference. */
-    val candidates: List<LogFormatSpec> by lazy { buildCandidates() }
+    val candidates: List<LogFormatSpec.Regex> by lazy { buildCandidates() }
 
-    private fun buildCandidates(): List<LogFormatSpec> {
-        val result = mutableListOf<LogFormatSpec>()
+    private fun buildCandidates(): List<LogFormatSpec.Regex> {
+        val result = mutableListOf<LogFormatSpec.Regex>()
         for (timestamp in timestampVariants) {
             val compiled = runCatching { TimestampPatternCompiler.compile(pattern = timestamp.pattern) }.getOrNull()
                 ?: continue
             for (structure in structureVariants) {
-                result += LogFormatSpec(
+                result += LogFormatSpec.Regex(
                     name = "${timestamp.label} - ${structure.label}",
                     linePattern = LineFormatCompiler.buildLinePattern(
                         template = structure.template,

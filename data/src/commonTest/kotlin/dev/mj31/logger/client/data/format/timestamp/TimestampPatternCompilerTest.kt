@@ -1,8 +1,11 @@
 package dev.mj31.logger.client.data.format.timestamp
 
+import dev.mj31.logger.client.domain.format.spec.TimestampPatternTokens
+import kotlin.time.Duration.Companion.hours
 import com.google.common.truth.Truth.assertThat
 import kotlin.time.Instant
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 
@@ -68,21 +71,35 @@ class TimestampPatternCompilerTest {
     }
 
     @Test
-    fun `explicit offset wins over the default offset`() {
+    fun `explicit offset wins over the zone`() {
         val resolved = resolve(
             pattern = "yyyy-MM-ddTHH:mm:ss.SSSXXX",
             text = "2024-01-15T10:23:45.123-05:00",
-            utcOffsetMinutes = 120,
+            zone = TimeZone.of(zoneId = "UTC+02:00"),
         )
 
         assertThat(resolved).isEqualTo(Instant.parse("2024-01-15T15:23:45.123Z"))
     }
 
     @Test
-    fun `applies the default offset when the pattern carries none`() {
-        val resolved = resolve(pattern = "yyyy-MM-dd HH:mm:ss", text = "2024-01-15 10:23:45", utcOffsetMinutes = 180)
+    fun `applies the zone when the pattern carries no offset`() {
+        val resolved = resolve(
+            pattern = "yyyy-MM-dd HH:mm:ss",
+            text = "2024-01-15 10:23:45",
+            zone = TimeZone.of(zoneId = "UTC+03:00"),
+        )
 
         assertThat(resolved).isEqualTo(Instant.parse("2024-01-15T07:23:45Z"))
+    }
+
+    @Test
+    fun `reports the offset a timestamp wrote and nothing when it wrote none`() {
+        val withOffset = TimestampPatternCompiler.compile(pattern = "yyyy-MM-ddTHH:mm:ssXXX")
+        val withoutOffset = TimestampPatternCompiler.compile(pattern = "yyyy-MM-dd HH:mm:ss")
+
+        assertThat(withOffset.explicitOffsetSeconds(text = "2024-01-15T10:23:45+05:30")).isEqualTo(19_800)
+        assertThat(withOffset.explicitOffsetSeconds(text = "2024-01-15T10:23:45Z")).isEqualTo(0)
+        assertThat(withoutOffset.explicitOffsetSeconds(text = "2024-01-15 10:23:45")).isNull()
     }
 
     @Test
@@ -169,7 +186,7 @@ class TimestampPatternCompilerTest {
     private fun resolve(
         pattern: String,
         text: String,
-        utcOffsetMinutes: Int = 0,
+        zone: TimeZone = TimeZone.UTC,
         previous: Instant? = null,
     ): Instant? {
         val compiled = TimestampPatternCompiler.compile(pattern = pattern)
@@ -179,10 +196,41 @@ class TimestampPatternCompilerTest {
             match = requireNotNull(match),
             context = TimestampResolutionContext(
                 referenceDate = REFERENCE_DATE,
-                utcOffsetMinutes = utcOffsetMinutes,
+                zone = zone,
                 previous = previous,
             ),
         )
+    }
+
+    @Test
+    fun `a twelve hour clock is read through its marker`() {
+        val morning = resolve(pattern = "yyyy-MM-dd hh:mm:ss a", text = "2024-06-05 03:15:00 AM")
+        val afternoon = resolve(pattern = "yyyy-MM-dd hh:mm:ss a", text = "2024-06-05 03:15:00 PM")
+
+        assertThat(afternoon!! - morning!!).isEqualTo(12.hours)
+    }
+
+    @Test
+    fun `midnight and noon are the two readings a twelve hour clock gets wrong most easily`() {
+        val midnight = resolve(pattern = "yyyy-MM-dd hh:mm:ss a", text = "2024-06-05 12:00:00 AM")
+        val noon = resolve(pattern = "yyyy-MM-dd hh:mm:ss a", text = "2024-06-05 12:00:00 PM")
+
+        assertThat(noon!! - midnight!!).isEqualTo(12.hours)
+        assertThat(midnight).isEqualTo(resolve(pattern = "yyyy-MM-dd HH:mm:ss", text = "2024-06-05 00:00:00"))
+    }
+
+    @Test
+    fun `a marker spelled with dots is still a marker`() {
+        val evening = resolve(pattern = "yyyy-MM-dd hh:mm:ss a", text = "2024-06-05 09:30:00 p.m.")
+
+        assertThat(evening).isEqualTo(resolve(pattern = "yyyy-MM-dd HH:mm:ss", text = "2024-06-05 21:30:00"))
+    }
+
+    @Test
+    fun `a twelve hour pattern with no marker is reported as ambiguous`() {
+        assertThat(TimestampPatternTokens.isHourAmbiguous(pattern = "yyyy-MM-dd hh:mm:ss")).isTrue()
+        assertThat(TimestampPatternTokens.isHourAmbiguous(pattern = "yyyy-MM-dd hh:mm:ss a")).isFalse()
+        assertThat(TimestampPatternTokens.isHourAmbiguous(pattern = "yyyy-MM-dd HH:mm:ss")).isFalse()
     }
 
     private companion object {

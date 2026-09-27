@@ -2,6 +2,7 @@ package dev.mj31.logger.client.app.platform
 
 import com.google.common.truth.Truth.assertThat
 import dev.mj31.logger.client.domain.source.MediaKind
+import dev.mj31.logger.client.domain.source.SupportedFileTypes
 import java.io.File
 import kotlin.test.Test
 
@@ -37,8 +38,9 @@ class FileChooserFilterTest {
     fun `the windows glob lists every accepted extension`() {
         val glob = globFor(kind = MediaKind.LOG)
 
-        assertThat(glob).contains("*.txt")
-        assertThat(glob).contains("*.log")
-        assertThat(glob.split(";").size).isEqualTo(2)
+        // Counted against the declaration rather than against a number written here: Windows never
+        // consults the callback, so anything missing from this string cannot be picked at all.
+        val expected = SupportedFileTypes.extensionsOf(kind = MediaKind.LOG)
+        assertThat(glob.split(";")).containsExactlyElementsIn(expected.map { "*$it" })
     }
 }

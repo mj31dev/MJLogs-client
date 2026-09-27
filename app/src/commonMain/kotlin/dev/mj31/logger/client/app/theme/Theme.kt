@@ -1,5 +1,6 @@
 package dev.mj31.logger.client.app.theme
 
+import dev.mj31.logger.client.app.theme.shape.AppShapes
 import androidx.compose.foundation.LocalScrollbarStyle
 import androidx.compose.foundation.defaultScrollbarStyle
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -38,7 +39,7 @@ fun LoggerTheme(
     }
     val colors = if (dark) DarkColors else LightColors
     val levels = if (dark) DarkLogLevelColors else LightLogLevelColors
-    MaterialTheme(colorScheme = colors) {
+    MaterialTheme(colorScheme = colors, shapes = AppShapes) {
         CompositionLocalProvider(
             LocalScrollbarStyle provides scrollbarStyle(thumb = colors.onSurfaceVariant),
             LocalLogLevelColors provides levels,

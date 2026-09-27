@@ -45,19 +45,28 @@ class ResolveClockAnchorUseCase {
         logRange: TimeRange?,
         videoDurationMillis: Long,
         accuracyMillis: Long,
+        timeZone: TimeZone = TimeZone.UTC,
     ): SyncAnchor {
         val readings = readingsOf(boundary = boundary)
         val fallback = anchorAt(
             instant = instantAt(
-                date = logRange?.let { range -> dateOf(instant = range.start) } ?: dateOf(instant = EPOCH),
+                date = logRange?.let { range -> dateOf(instant = range.start, zone = timeZone) }
+                    ?: dateOf(instant = EPOCH, zone = timeZone),
                 time = readings.first(),
+                zone = timeZone,
             ),
             boundary = boundary,
             accuracyMillis = accuracyMillis,
         )
         if (logRange == null) return fallback
 
-        return candidates(readings = readings, range = logRange, boundary = boundary, accuracy = accuracyMillis)
+        return candidates(
+            readings = readings,
+            range = logRange,
+            boundary = boundary,
+            accuracy = accuracyMillis,
+            zone = timeZone,
+        )
             .minByOrNull { candidate ->
                 distanceFrom(logRange = logRange, anchor = candidate, duration = videoDurationMillis)
             }
@@ -110,10 +119,11 @@ class ResolveClockAnchorUseCase {
         range: TimeRange,
         boundary: ScreenClockReading,
         accuracy: Long,
+        zone: TimeZone,
     ): List<SyncAnchor> = readings.flatMap { time ->
-        datesAround(range = range).map { day ->
+        datesAround(range = range, zone = zone).map { day ->
             anchorAt(
-                instant = instantAt(date = day, time = time),
+                instant = instantAt(date = day, time = time, zone = zone),
                 boundary = boundary,
                 accuracyMillis = accuracy,
             )
@@ -129,22 +139,22 @@ class ResolveClockAnchorUseCase {
         )
 
     /**
-     * Read as UTC, which is how a log line without an offset of its own is read: both sides are wall
-     * clock readings, and the zone they share cancels out of the comparison entirely.
+     * Read in the zone the logs beside it are shown in: a screen shows its device's clock, and that
+     * device is the one whose log the recording accompanies.
      */
-    private fun instantAt(date: LocalDate, time: LocalTime): Instant =
-        LocalDateTime(date = date, time = time).toInstant(timeZone = TimeZone.UTC)
+    private fun instantAt(date: LocalDate, time: LocalTime, zone: TimeZone): Instant =
+        LocalDateTime(date = date, time = time).toInstant(timeZone = zone)
 
     /** The days the logs touch, plus one either side, which is where a reading near midnight lands. */
-    private fun datesAround(range: TimeRange): List<LocalDate> {
-        val first = dateOf(instant = range.start).minus(DatePeriod(days = 1))
-        val last = dateOf(instant = range.end).plus(DatePeriod(days = 1))
+    private fun datesAround(range: TimeRange, zone: TimeZone): List<LocalDate> {
+        val first = dateOf(instant = range.start, zone = zone).minus(DatePeriod(days = 1))
+        val last = dateOf(instant = range.end, zone = zone).plus(DatePeriod(days = 1))
         return generateSequence(seed = first) { day -> day.plus(DatePeriod(days = 1)) }
             .takeWhile { day -> day <= last }
             .toList()
     }
 
-    private fun dateOf(instant: Instant): LocalDate = instant.toLocalDateTime(timeZone = TimeZone.UTC).date
+    private fun dateOf(instant: Instant, zone: TimeZone): LocalDate = instant.toLocalDateTime(timeZone = zone).date
 
     private companion object {
         const val NOON = 12

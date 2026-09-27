@@ -7,11 +7,12 @@ import dev.mj31.logger.client.domain.format.preview.HighlightedSpan
 import dev.mj31.logger.client.domain.format.LogComponent
 import dev.mj31.logger.client.domain.format.compile.LogFormatCompiler
 import dev.mj31.logger.client.domain.format.spec.LogFormatGroups
+import dev.mj31.logger.client.domain.format.spec.LogFormatSpec
 import dev.mj31.logger.client.domain.format.preview.LogFormatPreviewer
 import dev.mj31.logger.client.domain.format.compile.ManualFormatInput
 import dev.mj31.logger.client.domain.format.preview.PreviewLine
 import dev.mj31.logger.client.domain.model.log.LogLevel
-import dev.mj31.logger.client.data.format.line.TemplateLogFormatCompiler
+import dev.mj31.logger.client.data.format.line.ManualFormatCompiler
 import dev.mj31.logger.client.data.format.line.CompiledLineFormat
 
 /**
@@ -19,7 +20,7 @@ import dev.mj31.logger.client.data.format.line.CompiledLineFormat
  * component, using the very same regex the import would use.
  */
 class RegexLogFormatPreviewer(
-    private val compiler: LogFormatCompiler = TemplateLogFormatCompiler(),
+    private val compiler: LogFormatCompiler = ManualFormatCompiler(),
 ) : LogFormatPreviewer {
 
     override fun preview(input: ManualFormatInput, sampleLines: List<String>): FormatPreview {
@@ -31,7 +32,13 @@ class RegexLogFormatPreviewer(
             )
             is FormatCompilationResult.Success -> compiled.spec
         }
-        val format = runCatching { CompiledLineFormat.compile(spec = spec) }
+        // The template compiler only ever produces a regex specification; a structured format
+        // reaches the wizard through its own previewer rather than through this one.
+        val regexSpec = spec as? LogFormatSpec.Regex ?: return FormatPreview.Invalid(
+            message = DEFAULT_ERROR,
+            field = FormatErrorField.STRUCTURE_TEMPLATE,
+        )
+        val format = runCatching { CompiledLineFormat.compile(spec = regexSpec) }
             .getOrElse { error ->
                 return FormatPreview.Invalid(
                     message = error.message ?: DEFAULT_ERROR,

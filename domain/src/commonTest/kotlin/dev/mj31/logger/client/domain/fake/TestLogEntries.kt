@@ -5,6 +5,7 @@ import dev.mj31.logger.client.domain.format.spec.LogFormatSpec
 import kotlin.time.Instant
 import kotlin.time.Duration.Companion.milliseconds
 import dev.mj31.logger.client.domain.model.log.LogSource
+import kotlinx.datetime.LocalDate
 import dev.mj31.logger.client.domain.model.log.LogLevel
 import dev.mj31.logger.client.domain.model.log.LogEntry
 
@@ -16,11 +17,14 @@ import dev.mj31.logger.client.domain.model.log.LogEntry
  */
 object TestLogEntries {
 
+    /** Fixed day a dateless timestamp is completed with, so a fixture never depends on today. */
+    val REFERENCE_DATE: LocalDate = LocalDate(year = 2024, monthNumber = 1, dayOfMonth = 15)
+
     /** Arbitrary but fixed session origin; all relative timestamps are derived from it. */
     val BASE: Instant = Instant.parse("2024-05-01T10:00:00Z")
 
     /** Placeholder spec: the parser used by the tests is a fake, so the pattern content is irrelevant. */
-    val SPEC: LogFormatSpec = LogFormatSpec(
+    val SPEC: LogFormatSpec = LogFormatSpec.Regex(
         name = "test-format",
         linePattern = "(?<ts>\\d+)\\|(?<lvl>\\w+)\\|(?<tag>[^|]*)\\|(?<msg>.*)",
         timestampPattern = "epochMillis",
@@ -90,6 +94,7 @@ object TestLogEntries {
         path: String = "/logs/app.txt",
         format: LogFormatSpec = SPEC,
         entries: List<LogEntry> = emptyList(),
+        referenceDate: LocalDate = REFERENCE_DATE,
         skippedLineCount: Int = 0,
     ): LogSource = LogSource(
         id = id,
@@ -97,6 +102,7 @@ object TestLogEntries {
         path = path,
         format = format,
         entries = entries,
+        referenceDate = referenceDate,
         skippedLineCount = skippedLineCount,
     )
 }

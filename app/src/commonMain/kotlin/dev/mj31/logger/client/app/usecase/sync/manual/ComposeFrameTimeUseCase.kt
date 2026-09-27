@@ -15,12 +15,22 @@ class ComposeFrameTimeUseCase(
     private val parseFrameTime: ParseFrameTimeUseCase,
 ) {
 
-    operator fun invoke(dateMillis: Long, hour: Int, minute: Int, previousText: String): String {
+    /**
+     * [dateMillis] is midnight UTC of the picked day, which is how a date picker reports a day;
+     * [timeZone] is the one the field's text is read in.
+     */
+    operator fun invoke(
+        dateMillis: Long,
+        hour: Int,
+        minute: Int,
+        previousText: String,
+        timeZone: TimeZone = TimeZone.UTC,
+    ): String {
         val date = Instant.fromEpochMilliseconds(epochMilliseconds = dateMillis)
             .toLocalDateTime(timeZone = TimeZone.UTC)
             .date
-        val previous = parseFrameTime(text = previousText, referenceDate = date)
-            ?.toLocalDateTime(timeZone = TimeZone.UTC)
+        val previous = parseFrameTime(text = previousText, referenceDate = date, timeZone = timeZone)
+            ?.toLocalDateTime(timeZone = timeZone)
         val second = previous?.second ?: 0
         val millis = previous?.nanosecond?.div(other = NANOS_PER_MILLI) ?: 0
 

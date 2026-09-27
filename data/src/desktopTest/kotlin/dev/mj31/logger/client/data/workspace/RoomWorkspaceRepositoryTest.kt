@@ -1,5 +1,7 @@
 package dev.mj31.logger.client.data.workspace
 
+import kotlinx.datetime.LocalDate
+import dev.mj31.logger.client.domain.model.log.part.LogSourcePart
 import com.google.common.truth.Truth.assertThat
 import dev.mj31.logger.client.domain.format.spec.FormatOrigin
 import dev.mj31.logger.client.domain.format.spec.LogFormatSpec
@@ -45,6 +47,37 @@ class RoomWorkspaceRepositoryTest {
         repository.saveLastWorkspace(snapshot = SNAPSHOT)
 
         assertThat(repository.loadLastWorkspace()).isEqualTo(SNAPSHOT)
+    }
+
+    @Test
+    fun `keeps the files a merged source was made from, in their order`() = runTest {
+        val parts = listOf(
+            LogSourcePart(path = "/logs/first.1.txt", name = "first.1.txt", referenceDate = null),
+            LogSourcePart(
+                path = "/logs/first.2.txt",
+                name = "first.2.txt",
+                referenceDate = LocalDate(year = 2026, monthNumber = 8, dayOfMonth = 2),
+            ),
+        )
+        val snapshot = SNAPSHOT.copy(
+            logSources = listOf(sourceRef(id = "first").copy(extraParts = parts), sourceRef(id = "second")),
+        )
+
+        repository.saveLastWorkspace(snapshot = snapshot)
+
+        assertThat(repository.loadLastWorkspace()).isEqualTo(snapshot)
+    }
+
+    @Test
+    fun `replacing the workspace forgets the parts of sources that are gone`() = runTest {
+        val merged = sourceRef(id = "first").copy(
+            extraParts = listOf(LogSourcePart(path = "/logs/old.txt", name = "old.txt", referenceDate = null)),
+        )
+        repository.saveLastWorkspace(snapshot = SNAPSHOT.copy(logSources = listOf(merged)))
+
+        repository.saveLastWorkspace(snapshot = SNAPSHOT.copy(logSources = listOf(sourceRef(id = "first"))))
+
+        assertThat(repository.loadLastWorkspace()?.logSources?.single()?.extraParts).isEmpty()
     }
 
     @Test
@@ -117,12 +150,12 @@ class RoomWorkspaceRepositoryTest {
             id = id,
             name = "$id.txt",
             path = "/logs/$id.txt",
-            format = LogFormatSpec(
+            format = LogFormatSpec.Regex(
                 name = "detected",
                 linePattern = "^(?<ts>.*)$",
                 timestampPattern = "yyyy-MM-dd HH:mm:ss",
                 fallbackLevel = LogLevel.WARN,
-                utcOffsetMinutes = 120,
+                zoneId = "Europe/Berlin",
                 origin = FormatOrigin.USER_DEFINED,
             ),
         )

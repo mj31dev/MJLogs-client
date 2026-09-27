@@ -1,5 +1,6 @@
 package dev.mj31.logger.client.app.view
 
+import dev.mj31.logger.client.app.theme.type.ContentType
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -13,7 +14,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -25,13 +25,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import dev.mj31.logger.client.app.theme.AccentSync
 import dev.mj31.logger.client.app.theme.LocalLogLevelColors
+import dev.mj31.logger.client.app.theme.Spacing
 import dev.mj31.logger.client.domain.format.preview.FormatPreview
 import dev.mj31.logger.client.domain.format.LogComponent
 import dev.mj31.logger.client.domain.format.preview.PreviewLine
@@ -40,49 +38,57 @@ import dev.mj31.logger.client.app.resources.preview_matched_lines
 import dev.mj31.logger.client.app.resources.preview_unavailable
 import org.jetbrains.compose.resources.stringResource
 
-private const val PREVIEW_FONT_SIZE = 11
-private const val LEGEND_FONT_SIZE = 10
 private const val UNMATCHED_ALPHA = 0.55f
 private const val PREVIEW_MAX_HEIGHT = 150
+
+/** A colour swatch is a mark next to a word, not a control, so it is sized rather than spaced. */
+private const val SWATCH_SIZE = 8
 
 /**
  * Shows the sample lines the way the format currently typed would read them.
  *
  * Each component gets its own colour, and a line no rule matches is dimmed: that is precisely what
  * the importer would attach to the previous record instead of turning into a new one.
+ *
+ * The sample is drawn in every state, dimmed whole while the format does not compile, so the block
+ * keeps the height it had. It sits above the inputs, and a preview that vanished between two
+ * keystrokes would drag the box being typed in upwards with it.
  */
 @Composable
-fun FormatPreviewView(preview: FormatPreview, modifier: Modifier = Modifier) {
+fun FormatPreviewView(
+    preview: FormatPreview,
+    sampleLines: List<String>,
+    modifier: Modifier = Modifier,
+) {
+    if (sampleLines.isEmpty()) return
     Column(modifier = modifier.fillMaxWidth()) {
-        when (preview) {
-            FormatPreview.Empty -> Unit
-
-            // The message itself is attached to the input that caused it, right below the fields.
-            is FormatPreview.Invalid -> PreviewStatus(
-                text = stringResource(resource = Res.string.preview_unavailable),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            is FormatPreview.Ready -> {
-                PreviewStatus(
-                    text = stringResource(
-                        resource = Res.string.preview_matched_lines,
-                        preview.matchedLines,
-                        preview.totalLines,
-                    ),
-                    color = statusColor(preview = preview),
-                )
-                Spacer(modifier = Modifier.height(height = 4.dp))
-                Legend()
-                Spacer(modifier = Modifier.height(height = 6.dp))
-                PreviewLines(lines = preview.lines)
-            }
-        }
+        PreviewStatus(text = statusText(preview = preview), color = statusColor(preview = preview))
+        Spacer(modifier = Modifier.height(height = Spacing.tight))
+        Legend()
+        Spacer(modifier = Modifier.height(height = Spacing.small))
+        PreviewLines(lines = linesOf(preview = preview, sampleLines = sampleLines))
     }
 }
 
+/** What the format reads out of the sample, or why nothing can be read at all. */
 @Composable
-private fun statusColor(preview: FormatPreview.Ready): Color = when {
+private fun statusText(preview: FormatPreview): String = when (preview) {
+    // The message itself is attached to the input that caused it, right below the fields.
+    is FormatPreview.Invalid, FormatPreview.Empty -> stringResource(resource = Res.string.preview_unavailable)
+
+    is FormatPreview.Ready -> stringResource(
+        resource = Res.string.preview_matched_lines,
+        preview.matchedLines,
+        preview.totalLines,
+    )
+}
+
+private fun linesOf(preview: FormatPreview, sampleLines: List<String>): List<PreviewLine> =
+    (preview as? FormatPreview.Ready)?.lines ?: sampleLines.map { text -> PreviewLine(text = text) }
+
+@Composable
+private fun statusColor(preview: FormatPreview): Color = when {
+    preview !is FormatPreview.Ready -> MaterialTheme.colorScheme.onSurfaceVariant
     preview.matchedLines == 0 -> MaterialTheme.colorScheme.error
     preview.matchedLines < preview.totalLines -> LocalLogLevelColors.current.warn
     else -> LocalLogLevelColors.current.info
@@ -99,9 +105,9 @@ private fun PreviewLines(lines: List<PreviewLine>) {
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(max = PREVIEW_MAX_HEIGHT.dp)
-            .clip(shape = RoundedCornerShape(size = 6.dp))
+            .clip(shape = MaterialTheme.shapes.small)
             .background(color = MaterialTheme.colorScheme.surfaceVariant)
-            .padding(all = 8.dp),
+            .padding(all = Spacing.small),
     ) {
         Column(
             modifier = Modifier
@@ -112,8 +118,7 @@ private fun PreviewLines(lines: List<PreviewLine>) {
             lines.forEach { line ->
                 Text(
                     text = annotate(line = line, palette = palette),
-                    fontSize = PREVIEW_FONT_SIZE.sp,
-                    fontFamily = FontFamily.Monospace,
+                    style = ContentType.record,
                     maxLines = 1,
                 )
             }
@@ -123,20 +128,22 @@ private fun PreviewLines(lines: List<PreviewLine>) {
 
 @Composable
 private fun Legend() {
-    Row(horizontalArrangement = Arrangement.spacedBy(space = 10.dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(space = Spacing.small)) {
         val palette = previewPalette()
         LogComponent.entries.forEach { component ->
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(space = Spacing.tight),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Box(
                     modifier = Modifier
-                        .size(size = 7.dp)
-                        .clip(shape = RoundedCornerShape(size = 2.dp))
+                        .size(size = SWATCH_SIZE.dp)
+                        .clip(shape = MaterialTheme.shapes.extraSmall)
                         .background(color = palette.colorOf(component = component)),
                 )
-                Spacer(modifier = Modifier.height(height = 0.dp))
                 Text(
-                    text = " ${component.name.lowercase()}",
-                    fontSize = LEGEND_FONT_SIZE.sp,
+                    text = component.name.lowercase(),
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -166,7 +173,8 @@ private data class PreviewPalette(
 private fun previewPalette(): PreviewPalette = PreviewPalette(
     timestamp = MaterialTheme.colorScheme.primary,
     level = LocalLogLevelColors.current.warn,
-    tag = AccentSync,
+    // The anchor accent is one colour for both schemes and all but disappears against white here.
+    tag = MaterialTheme.colorScheme.secondary,
     message = MaterialTheme.colorScheme.onSurface,
     separator = MaterialTheme.colorScheme.onSurfaceVariant,
     unmatched = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = UNMATCHED_ALPHA),

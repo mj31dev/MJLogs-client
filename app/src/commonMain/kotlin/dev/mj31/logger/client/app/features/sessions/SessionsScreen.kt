@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -39,7 +38,6 @@ import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
 /** One radius for everything here, so the column reads as one family rather than three widgets. */
-private val CardShape = RoundedCornerShape(size = 10.dp)
 
 /** A launcher centred in a window sized for two panes would otherwise stretch across 1440dp. */
 private val ContentMaxWidth = 680.dp
@@ -110,7 +108,7 @@ private fun ContinueCard(
     Surface(
         onClick = { onIntent(SessionsIntent.ContinueLast) },
         modifier = Modifier.fillMaxWidth(),
-        shape = CardShape,
+        shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surface,
     ) {
         Column(
@@ -197,7 +195,7 @@ private fun RecentSessionRow(
     Surface(
         onClick = { onIntent(SessionsIntent.Open(path = entry.path)) },
         modifier = Modifier.fillMaxWidth(),
-        shape = CardShape,
+        shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surface,
     ) {
         Row(

@@ -7,6 +7,7 @@ import dev.mj31.logger.client.domain.format.spec.LogFormatGroups
 import dev.mj31.logger.client.domain.model.log.LogLevel
 import kotlin.time.Instant
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
 import dev.mj31.logger.client.data.format.line.CompiledLineFormat
 
 /**
@@ -22,17 +23,19 @@ class RegexLogLineParser internal constructor(
 ) : LogLineParser {
 
     private var previousTimestamp: Instant? = null
+    private val zone: TimeZone = format.spec.zoneId?.let { TimeZone.of(zoneId = it) } ?: TimeZone.UTC
 
     override fun parse(line: String): ParsedLine {
         val match = format.lineRegex.find(input = line) ?: return continuationOf(line = line)
         val context = TimestampResolutionContext(
             referenceDate = referenceDate,
-            utcOffsetMinutes = format.spec.utcOffsetMinutes,
+            zone = zone,
             previous = previousTimestamp,
         )
         val timestamp = format.timestamp.resolve(match = match, context = context) ?: return continuationOf(line = line)
         previousTimestamp = timestamp
         return ParsedLine.Record(
+            utcOffsetSeconds = format.timestamp.explicitOffsetSeconds(match = match),
             timestamp = timestamp,
             level = levelOf(match = match),
             tag = tagOf(match = match),

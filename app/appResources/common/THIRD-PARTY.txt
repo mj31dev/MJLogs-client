@@ -77,7 +77,8 @@ disclaimed.
 Other components  —  Apache License 2.0
 --------------------------------------------------------------------------------
 
-Kotlin standard library, kotlinx.coroutines, kotlinx.datetime, Compose Multiplatform, Skiko
+Kotlin standard library, kotlinx.coroutines, kotlinx.datetime, kotlinx.serialization, Compose
+Multiplatform, Skiko
 (which embeds Skia, BSD-3-Clause), AndroidX Lifecycle, AndroidX Room, AndroidX SQLite, the AndroidX
 support libraries pulled in with them (annotation, arch.core, collection, savedstate,
 navigationevent), JetBrains Annotations (org.jetbrains:annotations) and the JetBrains Runtime API

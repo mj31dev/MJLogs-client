@@ -51,7 +51,8 @@ class StartupArgumentsTest {
         openStartupFiles(paths = listOf("/media/photo.png"), store = robot.store)
         robot.settle()
 
-        assertThat((robot.lastMessage as UiText.Raw).value).contains("photo.png")
+        // A path from the command line goes through the very same question a chosen file does.
+        assertThat(robot.state.unsupportedImport?.fileName).isEqualTo("photo.png")
         assertThat(robot.player.openedMedia).isEmpty()
         assertThat(robot.state.sources).isEmpty()
     }

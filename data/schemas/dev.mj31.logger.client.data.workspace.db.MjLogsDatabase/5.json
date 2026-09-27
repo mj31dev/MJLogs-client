@@ -1,0 +1,271 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 5,
+    "identityHash": "4cef62c28080c170d4fdb1314d82d45d",
+    "entities": [
+      {
+        "tableName": "last_workspace",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `videoPath` TEXT, `videoName` TEXT, `anchorLogTimestampMillis` INTEGER, `anchorVideoPositionMillis` INTEGER, `anchorOrigin` TEXT, `anchorLogEntryId` TEXT, `anchorAccuracyMillis` INTEGER, `filterQuery` TEXT NOT NULL, `filterLevels` TEXT NOT NULL, `filterSourceIds` TEXT NOT NULL, `timeWindowMillis` INTEGER, `followVideo` INTEGER NOT NULL, `videoPositionMillis` INTEGER NOT NULL, `packagePath` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "videoPath",
+            "columnName": "videoPath",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "videoName",
+            "columnName": "videoName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "anchorLogTimestampMillis",
+            "columnName": "anchorLogTimestampMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "anchorVideoPositionMillis",
+            "columnName": "anchorVideoPositionMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "anchorOrigin",
+            "columnName": "anchorOrigin",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "anchorLogEntryId",
+            "columnName": "anchorLogEntryId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "anchorAccuracyMillis",
+            "columnName": "anchorAccuracyMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "filterQuery",
+            "columnName": "filterQuery",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "filterLevels",
+            "columnName": "filterLevels",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "filterSourceIds",
+            "columnName": "filterSourceIds",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timeWindowMillis",
+            "columnName": "timeWindowMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "followVideo",
+            "columnName": "followVideo",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "videoPositionMillis",
+            "columnName": "videoPositionMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "packagePath",
+            "columnName": "packagePath",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "workspace_log_source",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `path` TEXT NOT NULL, `position` INTEGER NOT NULL, `referenceDate` TEXT, `formatName` TEXT NOT NULL, `formatKind` TEXT NOT NULL, `formatLinePattern` TEXT, `formatDelimiter` TEXT, `formatHasHeader` INTEGER, `formatTimestampField` TEXT, `formatLevelField` TEXT, `formatTagField` TEXT, `formatMessageField` TEXT, `formatTimestampPattern` TEXT NOT NULL, `formatFallbackLevel` TEXT NOT NULL, `formatZoneId` TEXT, `formatOrigin` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "path",
+            "columnName": "path",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "referenceDate",
+            "columnName": "referenceDate",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "formatName",
+            "columnName": "formatName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "formatKind",
+            "columnName": "formatKind",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "formatLinePattern",
+            "columnName": "formatLinePattern",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "formatDelimiter",
+            "columnName": "formatDelimiter",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "formatHasHeader",
+            "columnName": "formatHasHeader",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "formatTimestampField",
+            "columnName": "formatTimestampField",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "formatLevelField",
+            "columnName": "formatLevelField",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "formatTagField",
+            "columnName": "formatTagField",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "formatMessageField",
+            "columnName": "formatMessageField",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "formatTimestampPattern",
+            "columnName": "formatTimestampPattern",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "formatFallbackLevel",
+            "columnName": "formatFallbackLevel",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "formatZoneId",
+            "columnName": "formatZoneId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "formatOrigin",
+            "columnName": "formatOrigin",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "recent_package",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`path` TEXT NOT NULL, `name` TEXT NOT NULL, `lastOpenedMillis` INTEGER NOT NULL, PRIMARY KEY(`path`))",
+        "fields": [
+          {
+            "fieldPath": "path",
+            "columnName": "path",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastOpenedMillis",
+            "columnName": "lastOpenedMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "path"
+          ]
+        }
+      },
+      {
+        "tableName": "preference",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`key` TEXT NOT NULL, `value` TEXT NOT NULL, PRIMARY KEY(`key`))",
+        "fields": [
+          {
+            "fieldPath": "key",
+            "columnName": "key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "value",
+            "columnName": "value",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "key"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '4cef62c28080c170d4fdb1314d82d45d')"
+    ]
+  }
+}

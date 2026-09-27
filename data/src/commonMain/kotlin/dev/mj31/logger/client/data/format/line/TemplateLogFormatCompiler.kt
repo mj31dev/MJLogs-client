@@ -3,7 +3,6 @@ package dev.mj31.logger.client.data.format.line
 import dev.mj31.logger.client.domain.format.compile.FormatCompilationResult
 import dev.mj31.logger.client.domain.format.compile.FormatErrorField
 import dev.mj31.logger.client.domain.format.spec.FormatOrigin
-import dev.mj31.logger.client.domain.format.compile.LogFormatCompiler
 import dev.mj31.logger.client.domain.format.spec.LogFormatGroups
 import dev.mj31.logger.client.domain.format.spec.LogFormatPlaceholders
 import dev.mj31.logger.client.domain.format.spec.LogFormatSpec
@@ -20,9 +19,9 @@ import dev.mj31.logger.client.data.format.timestamp.TimestampPatternCompiler
  * [LogFormatPlaceholders.ANY] is the exception: it captures nothing, only consuming a varying
  * fragment such as a counter, and may therefore appear several times.
  */
-class TemplateLogFormatCompiler : LogFormatCompiler {
+class TemplateLogFormatCompiler {
 
-    override fun compile(input: ManualFormatInput): FormatCompilationResult {
+    fun compile(input: ManualFormatInput.Template): FormatCompilationResult {
         val timestamp = runCatching { TimestampPatternCompiler.compile(pattern = input.timestampPattern) }
             .getOrElse { error ->
                 return failure(
@@ -33,7 +32,7 @@ class TemplateLogFormatCompiler : LogFormatCompiler {
         return compileStructure(input = input, timestampRegex = timestamp.regexSource)
     }
 
-    private fun compileStructure(input: ManualFormatInput, timestampRegex: String): FormatCompilationResult {
+    private fun compileStructure(input: ManualFormatInput.Template, timestampRegex: String): FormatCompilationResult {
         val body = when (val translation = translate(template = input.structureTemplate)) {
             is Translation.Failure -> return failure(
                 message = translation.message,
@@ -54,7 +53,7 @@ class TemplateLogFormatCompiler : LogFormatCompiler {
         return specOf(input = input, linePattern = linePattern)
     }
 
-    private fun specOf(input: ManualFormatInput, linePattern: String): FormatCompilationResult {
+    private fun specOf(input: ManualFormatInput.Template, linePattern: String): FormatCompilationResult {
         if (runCatching { Regex(pattern = linePattern, option = RegexOption.IGNORE_CASE) }.isFailure) {
             return failure(
                 message = "The structure template '${input.structureTemplate}' does not describe a usable line layout.",
@@ -62,11 +61,10 @@ class TemplateLogFormatCompiler : LogFormatCompiler {
             )
         }
         return FormatCompilationResult.Success(
-            spec = LogFormatSpec(
+            spec = LogFormatSpec.Regex(
                 name = CUSTOM_FORMAT_NAME,
                 linePattern = linePattern,
                 timestampPattern = input.timestampPattern,
-                utcOffsetMinutes = input.utcOffsetMinutes,
                 origin = FormatOrigin.USER_DEFINED,
             ),
         )
