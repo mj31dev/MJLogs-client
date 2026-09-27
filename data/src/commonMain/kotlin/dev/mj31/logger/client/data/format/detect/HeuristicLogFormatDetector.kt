@@ -9,9 +9,10 @@ import dev.mj31.logger.client.domain.format.spec.LogFormatSpec
 import dev.mj31.logger.client.domain.format.compile.ManualFormatInput
 import dev.mj31.logger.client.domain.format.parse.ParsedLine
 import kotlinx.datetime.LocalDate
-import dev.mj31.logger.client.data.format.line.TemplateLogFormatCompiler
+import dev.mj31.logger.client.data.format.line.ManualFormatCompiler
 import dev.mj31.logger.client.data.format.parse.RegexLogLineParser
 import dev.mj31.logger.client.data.format.line.CompiledLineFormat
+import dev.mj31.logger.client.data.format.timestamp.TimestampShapeInference
 
 /**
  * Recognizes a log layout by running every candidate of [BuiltInLogFormats] over a sample of lines.
@@ -20,12 +21,17 @@ import dev.mj31.logger.client.data.format.line.CompiledLineFormat
  * continuation lines (stack frames and indented text) are excluded from the denominator because no
  * format is expected to match them. Candidate regexes are compiled lazily and cached for the lifetime
  * of the detector, so repeated detections only pay the matching cost.
+ *
+ * Lines before a candidate's first record are not held against it. A file often opens with a few
+ * lines about itself — a banner, the device, when logging started — and counting those as misses
+ * would fail a short log that is otherwise read perfectly. The allowance is bounded by
+ * [MAX_PREAMBLE_LINES], so a candidate cannot excuse itself by matching only the tail of a sample.
  */
 class HeuristicLogFormatDetector(
-    private val candidates: List<LogFormatSpec> = BuiltInLogFormats.candidates,
+    private val candidates: List<LogFormatSpec.Regex> = BuiltInLogFormats.candidates,
     private val referenceDate: LocalDate = DEFAULT_REFERENCE_DATE,
     private val guesser: LogFormatGuesser = LogFormatGuesser(),
-    private val formatCompiler: LogFormatCompiler = TemplateLogFormatCompiler(),
+    private val formatCompiler: LogFormatCompiler = ManualFormatCompiler(),
 ) : LogFormatDetector {
 
     private val compiledCandidates: List<Lazy<CompiledLineFormat?>> = candidates.map { spec ->
@@ -72,28 +78,40 @@ class HeuristicLogFormatDetector(
         .reduceOrNull { best, score -> if (score.isBetterThan(other = best)) score else best }
 
     private fun scoreOf(format: CompiledLineFormat, probes: List<String>): CandidateScore {
-        val matched = countMatches(format = format, probes = probes)
+        val parser = RegexLogLineParser(format = format, referenceDate = referenceDate)
+        val records = probes.map { parser.parse(line = it) is ParsedLine.Record }
+        val preamble = records.indexOf(element = true).takeIf { it in 0..MAX_PREAMBLE_LINES } ?: 0
+        val matched = records.count { it }
         return CandidateScore(
             spec = format.spec,
             matched = matched,
-            confidence = matched.toFloat() / probes.size,
+            confidence = matched.toFloat() / (probes.size - preamble),
             capturedComponents = format.capturedComponents,
             capturesLevel = format.hasLevelGroup,
             capturesTag = format.hasTagGroup,
         )
     }
 
-    private fun countMatches(format: CompiledLineFormat, probes: List<String>): Int {
-        val parser = RegexLogLineParser(format = format, referenceDate = referenceDate)
-        return probes.count { parser.parse(line = it) is ParsedLine.Record }
+    /**
+     * Shows the dialog lines that can be described, and guesses from those alone.
+     *
+     * Nothing has matched, so where a preamble ends is not known; the first line holding something
+     * shaped like a time is the best available answer, and a preview made of a banner would give the
+     * user nothing to describe.
+     */
+    private fun undetermined(sample: List<String>, reason: String): FormatDetectionResult.Undetermined {
+        val records = withoutPreamble(sample = sample)
+        return FormatDetectionResult.Undetermined(
+            sampleLines = records.take(n = MAX_PREVIEW_LINES),
+            reason = reason,
+            suggestion = validatedSuggestion(sample = records),
+        )
     }
 
-    private fun undetermined(sample: List<String>, reason: String): FormatDetectionResult.Undetermined =
-        FormatDetectionResult.Undetermined(
-            sampleLines = sample.take(n = MAX_PREVIEW_LINES),
-            reason = reason,
-            suggestion = validatedSuggestion(sample = sample),
-        )
+    private fun withoutPreamble(sample: List<String>): List<String> {
+        val first = sample.indexOfFirst { TimestampShapeInference.findRegion(line = it) != null }
+        return if (first in 1..MAX_PREAMBLE_LINES) sample.drop(n = first) else sample
+    }
 
     /**
      * Infers a description of these very lines and keeps it only if it actually parses them.
@@ -101,10 +119,11 @@ class HeuristicLogFormatDetector(
      * Pre-filling the dialog with a broken guess would cost the user more time than the neutral
      * default, so an unverified suggestion is never proposed.
      */
-    private fun validatedSuggestion(sample: List<String>): ManualFormatInput? {
+    private fun validatedSuggestion(sample: List<String>): ManualFormatInput.Template? {
         val guess = guesser.guess(sampleLines = sample) ?: return null
         val compiled = formatCompiler.compile(input = guess) as? FormatCompilationResult.Success ?: return null
-        val format = runCatching { CompiledLineFormat.compile(spec = compiled.spec) }.getOrNull() ?: return null
+        val guessed = compiled.spec as? LogFormatSpec.Regex ?: return null
+        val format = runCatching { CompiledLineFormat.compile(spec = guessed) }.getOrNull() ?: return null
         val probes = sample.filterNot { isContinuation(line = it) }
         if (probes.isEmpty()) return null
         val parser = RegexLogLineParser(format = format, referenceDate = referenceDate)
@@ -152,6 +171,9 @@ class HeuristicLogFormatDetector(
         const val MIN_MATCHED_LINES: Int = 3
         const val MAX_SAMPLE_LINES: Int = 200
         const val MAX_PREVIEW_LINES: Int = 8
+
+        /** How many lines a file may carry before its first record without counting against a format. */
+        const val MAX_PREAMBLE_LINES: Int = 50
 
         private const val PERCENT_SCALE = 100
         private const val NO_CANDIDATE_REASON =

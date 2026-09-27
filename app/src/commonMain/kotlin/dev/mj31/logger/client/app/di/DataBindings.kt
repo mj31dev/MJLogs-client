@@ -14,10 +14,10 @@ import kotlin.time.Clock
 import kotlinx.datetime.TimeZone
 import me.tatarka.inject.annotations.Provides
 import dev.mj31.logger.client.app.usecase.session.MergeLogSourcesUseCase
-import dev.mj31.logger.client.data.format.preview.RegexLogFormatPreviewer
-import dev.mj31.logger.client.data.format.line.TemplateLogFormatCompiler
-import dev.mj31.logger.client.data.format.parse.RegexLogLineParserFactory
-import dev.mj31.logger.client.data.format.detect.HeuristicLogFormatDetector
+import dev.mj31.logger.client.data.format.preview.ManualFormatPreviewer
+import dev.mj31.logger.client.data.format.line.ManualFormatCompiler
+import dev.mj31.logger.client.data.format.parse.DispatchingLogLineParserFactory
+import dev.mj31.logger.client.data.format.detect.StructureFirstLogFormatDetector
 
 /**
  * Storage and the format engine of `:data`.
@@ -34,16 +34,16 @@ interface DataBindings {
     fun timeZone(): TimeZone = TimeZone.currentSystemDefault()
 
     @Provides
-    fun logLineParserFactory(): LogLineParserFactory = RegexLogLineParserFactory()
+    fun logLineParserFactory(): LogLineParserFactory = DispatchingLogLineParserFactory()
 
     @Provides
-    fun logFormatDetector(): LogFormatDetector = HeuristicLogFormatDetector()
+    fun logFormatDetector(): LogFormatDetector = StructureFirstLogFormatDetector()
 
     @Provides
-    fun logFormatCompiler(): LogFormatCompiler = TemplateLogFormatCompiler()
+    fun logFormatCompiler(): LogFormatCompiler = ManualFormatCompiler()
 
     @Provides
-    fun logFormatPreviewer(): LogFormatPreviewer = RegexLogFormatPreviewer()
+    fun logFormatPreviewer(): LogFormatPreviewer = ManualFormatPreviewer()
 
     @AppScope
     @Provides

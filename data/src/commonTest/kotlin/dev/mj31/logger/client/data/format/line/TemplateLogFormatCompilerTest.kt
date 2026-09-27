@@ -12,12 +12,12 @@ import kotlinx.datetime.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertIs
 import dev.mj31.logger.client.domain.model.log.LogLevel
-import dev.mj31.logger.client.data.format.parse.RegexLogLineParserFactory
+import dev.mj31.logger.client.data.format.parse.DispatchingLogLineParserFactory
 
 class TemplateLogFormatCompilerTest {
 
     private val compiler = TemplateLogFormatCompiler()
-    private val factory = RegexLogLineParserFactory()
+    private val factory = DispatchingLogLineParserFactory()
 
     @Test
     fun `compiles a full template and parses a matching line`() {
@@ -37,16 +37,19 @@ class TemplateLogFormatCompilerTest {
     }
 
     @Test
-    fun `keeps the configured offset`() {
-        val spec = compiled(
-            timestampPattern = "yyyy-MM-dd HH:mm:ss",
-            structureTemplate = "{timestamp} {message}",
-            utcOffsetMinutes = 180,
+    fun `keeps the zone typed beside the template, spelled canonically`() {
+        val result = ManualFormatCompiler().compile(
+            input = ManualFormatInput.Template(
+                timestampPattern = "yyyy-MM-dd HH:mm:ss",
+                structureTemplate = "{timestamp} {message}",
+                zoneId = "utc+3",
+            ),
         )
+        val spec = assertIs<FormatCompilationResult.Success>(result).spec
 
         val record = record(spec = spec, line = "2024-01-15 10:23:45 Started")
 
-        assertThat(spec.utcOffsetMinutes).isEqualTo(180)
+        assertThat(spec.zoneId).isEqualTo("UTC+03:00")
         assertThat(record.timestamp).isEqualTo(Instant.parse("2024-01-15T07:23:45Z"))
         assertThat(record.message).isEqualTo("Started")
     }
@@ -189,16 +192,40 @@ class TemplateLogFormatCompilerTest {
             .containsExactlyElementsIn(List(size = failures.size) { FormatErrorField.STRUCTURE_TEMPLATE })
     }
 
+    @Test
+    fun `a zone that does not exist is rejected at its own field`() {
+        val result = ManualFormatCompiler().compile(
+            input = ManualFormatInput.Template(
+                timestampPattern = "yyyy-MM-dd HH:mm:ss",
+                structureTemplate = "{timestamp} {message}",
+                zoneId = "Mars/Olympus",
+            ),
+        )
+
+        assertThat(assertIs<FormatCompilationResult.Failure>(result).field).isEqualTo(FormatErrorField.ZONE)
+    }
+
+    @Test
+    fun `a blank zone leaves the choice to the file`() {
+        val result = ManualFormatCompiler().compile(
+            input = ManualFormatInput.Template(
+                timestampPattern = "yyyy-MM-dd HH:mm:ss",
+                structureTemplate = "{timestamp} {message}",
+                zoneId = "  ",
+            ),
+        )
+
+        assertThat(assertIs<FormatCompilationResult.Success>(result).spec.zoneId).isNull()
+    }
+
     private fun compiled(
         timestampPattern: String,
         structureTemplate: String,
-        utcOffsetMinutes: Int = 0,
     ): LogFormatSpec {
         val result = compiler.compile(
-            input = ManualFormatInput(
+            input = ManualFormatInput.Template(
                 timestampPattern = timestampPattern,
                 structureTemplate = structureTemplate,
-                utcOffsetMinutes = utcOffsetMinutes,
             ),
         )
         return assertIs<FormatCompilationResult.Success>(result).spec
@@ -206,7 +233,7 @@ class TemplateLogFormatCompilerTest {
 
     private fun failure(timestampPattern: String, structureTemplate: String): FormatCompilationResult.Failure {
         val result = compiler.compile(
-            input = ManualFormatInput(timestampPattern = timestampPattern, structureTemplate = structureTemplate),
+            input = ManualFormatInput.Template(timestampPattern = timestampPattern, structureTemplate = structureTemplate),
         )
         return assertIs<FormatCompilationResult.Failure>(result)
     }

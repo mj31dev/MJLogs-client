@@ -32,8 +32,13 @@ import dev.mj31.logger.client.domain.player.VideoFrame
 import dev.mj31.logger.client.app.view.MessageBar
 import dev.mj31.logger.client.app.view.UiMessage
 import dev.mj31.logger.client.app.features.logplayer.state.LogPlayerState
+import dev.mj31.logger.client.app.features.logplayer.duplicate.DuplicateDialog
 import dev.mj31.logger.client.app.features.logplayer.format.FormatWizardDialog
+import dev.mj31.logger.client.app.features.logplayer.ingest.SourcePreambleDialog
+import dev.mj31.logger.client.app.features.logplayer.ingest.StartDayDialog
+import dev.mj31.logger.client.app.features.logplayer.ingest.UnsupportedImportDialog
 import dev.mj31.logger.client.app.features.logplayer.session.SessionSaveBar
+import dev.mj31.logger.client.app.features.logplayer.zone.ZoneChooserDialog
 
 /**
  * Screencast on the left, merged log session on the right, synchronization controls at the bottom.
@@ -95,6 +100,33 @@ fun PlayerScreen(
 
     state.formatRequest?.let { request ->
         FormatWizardDialog(request = request, onIntent = onIntent)
+    }
+
+    // One refusal at a time: the state holds a queue and hands over its head, so the dialog closes
+    // on an answer and opens again for the next file.
+    state.unsupportedImport?.let { request ->
+        UnsupportedImportDialog(request = request, onIntent = onIntent)
+    }
+
+    // Same queue discipline for the file that could belong to either of two days.
+    state.startDayRequest?.let { request ->
+        StartDayDialog(request = request, onIntent = onIntent)
+    }
+
+    // A file that repeats one already open, one at a time like the questions above.
+    state.duplicateRequest?.let { request ->
+        DuplicateDialog(request = request, onIntent = onIntent)
+    }
+
+    // Opened from a source chip's menu; reading only, so it asks nothing and closes on dismiss.
+    state.preamble?.let { preamble ->
+        SourcePreambleDialog(preamble = preamble, onIntent = onIntent)
+    }
+
+    // Opened from a source chip's menu or from the sync bar; one dialog serves both, for whichever
+    // clock the request names.
+    state.zoneRequest?.let { request ->
+        ZoneChooserDialog(request = request, onIntent = onIntent)
     }
 }
 

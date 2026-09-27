@@ -18,7 +18,7 @@ class RegexLogFormatPreviewerTest {
         val line = "2024-01-15 10:23:45.123 WARN [CacheStore]: evicted 15 entries"
 
         val preview = ready(
-            input = ManualFormatInput(
+            input = ManualFormatInput.Template(
                 timestampPattern = "yyyy-MM-dd HH:mm:ss.SSS",
                 structureTemplate = "{timestamp} {level} [{tag}]: {message}",
             ),
@@ -41,7 +41,7 @@ class RegexLogFormatPreviewerTest {
         val line = "10:23:45 booting the exporter"
 
         val preview = ready(
-            input = ManualFormatInput(timestampPattern = "HH:mm:ss", structureTemplate = "{timestamp} {message}"),
+            input = ManualFormatInput.Template(timestampPattern = "HH:mm:ss", structureTemplate = "{timestamp} {message}"),
             lines = listOf(line),
         )
 
@@ -56,7 +56,7 @@ class RegexLogFormatPreviewerTest {
     @Test
     fun `lines the format does not match are reported as continuations`() {
         val preview = ready(
-            input = ManualFormatInput(timestampPattern = "HH:mm:ss", structureTemplate = "{timestamp} {message}"),
+            input = ManualFormatInput.Template(timestampPattern = "HH:mm:ss", structureTemplate = "{timestamp} {message}"),
             lines = listOf("10:23:45 upload failed", "    at Http2Stream.takeHeaders(Http2Stream.kt:143)"),
         )
 
@@ -69,7 +69,7 @@ class RegexLogFormatPreviewerTest {
     @Test
     fun `an uncompilable format is reported instead of throwing`() {
         val preview = previewer.preview(
-            input = ManualFormatInput(timestampPattern = "???", structureTemplate = "{timestamp} {message}"),
+            input = ManualFormatInput.Template(timestampPattern = "???", structureTemplate = "{timestamp} {message}"),
             sampleLines = listOf("10:23:45 boot"),
         )
 
@@ -80,7 +80,7 @@ class RegexLogFormatPreviewerTest {
     @Test
     fun `an empty sample yields an empty preview`() {
         val preview = previewer.preview(
-            input = ManualFormatInput(timestampPattern = "HH:mm:ss", structureTemplate = "{timestamp} {message}"),
+            input = ManualFormatInput.Template(timestampPattern = "HH:mm:ss", structureTemplate = "{timestamp} {message}"),
             sampleLines = emptyList(),
         )
 

@@ -7,16 +7,46 @@ class SupportedFileTypesTest {
 
     @Test
     fun `recognizes the accepted log extensions`() {
-        assertThat(SupportedFileTypes.accepts(kind = MediaKind.LOG, path = "/logs/app.txt")).isTrue()
-        assertThat(SupportedFileTypes.accepts(kind = MediaKind.LOG, path = "/logs/app.log")).isTrue()
-        assertThat(SupportedFileTypes.accepts(kind = MediaKind.LOG, path = "C:\\logs\\app.LOG")).isTrue()
+        listOf(
+            "/logs/app.txt",
+            "/logs/app.log",
+            "C:\\logs\\app.LOG",
+            "/logs/app.out",
+            "/logs/app.err",
+            "/logs/app.json",
+            "/logs/app.jsonl",
+            "/logs/app.ndjson",
+            "/logs/app.csv",
+            "/logs/app.tsv",
+        ).forEach { path ->
+            assertThat(SupportedFileTypes.accepts(kind = MediaKind.LOG, path = path)).isTrue()
+        }
     }
 
     @Test
-    fun `rejects anything else as a log`() {
-        listOf("/logs/app.txt.gz", "/logs/app", "/logs/app.csv", "/media/clip.mp4", "").forEach { path ->
-            assertThat(SupportedFileTypes.accepts(kind = MediaKind.LOG, path = path)).isFalse()
+    fun `recognizes containers as something a log can be taken from`() {
+        listOf("/logs/app.log.gz", "/logs/bundle.zip", "/logs/app.txt.GZ").forEach { path ->
+            assertThat(SupportedFileTypes.accepts(kind = MediaKind.LOG, path = path)).isTrue()
+            assertThat(SupportedFileTypes.isArchive(path = path)).isTrue()
         }
+        assertThat(SupportedFileTypes.isArchive(path = "/logs/app.log")).isFalse()
+    }
+
+    @Test
+    fun `recognizes what log rotation leaves behind`() {
+        listOf("/logs/app.log.1", "/logs/app.log.2024-08-01", "/logs/app.log.1.gz").forEach { path ->
+            assertThat(SupportedFileTypes.accepts(kind = MediaKind.LOG, path = path)).isTrue()
+        }
+    }
+
+    @Test
+    fun `does not let an arbitrary suffix turn another file into a log`() {
+        // The rotation rule accepts a counter or a date, never a free suffix; a screencast whose name
+        // merely contains `.log.` must stay a screencast.
+        listOf("/logs/capture.log.mp4", "/logs/app.log.backup", "/logs/app", "/media/clip.mp4", "")
+            .forEach { path ->
+                assertThat(SupportedFileTypes.accepts(kind = MediaKind.LOG, path = path)).isFalse()
+            }
     }
 
     @Test

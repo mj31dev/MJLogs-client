@@ -14,23 +14,24 @@ import kotlinx.datetime.toInstant
  * are the ones the application itself prints (`yyyy-MM-dd HH:mm:ss.SSS` and `HH:mm:ss.SSS`); a time
  * without a date is completed with [referenceDate], which the loaded session provides.
  *
- * Log timestamps without an explicit offset are read as UTC, so a typed time is read the same way.
+ * The typed time is a reading of a clock on the screen, so it is read in the zone that clock runs
+ * in — the one the logs beside it are shown in, unless the user said otherwise.
  */
 class ParseFrameTimeUseCase {
 
-    operator fun invoke(text: String, referenceDate: LocalDate?): Instant? {
+    operator fun invoke(text: String, referenceDate: LocalDate?, timeZone: TimeZone = TimeZone.UTC): Instant? {
         val trimmed = text.trim()
         val dated = DATE_TIME.matchEntire(input = trimmed)
         return if (dated != null) {
             runCatching { LocalDate.parse(input = dated.groupValues[DATE_GROUP]) }
                 .getOrNull()
-                ?.let { date -> instantOf(date = date, match = dated, timeOffset = DATE_GROUP) }
+                ?.let { date -> instantOf(date = date, match = dated, timeOffset = DATE_GROUP, zone = timeZone) }
         } else {
             val timed = TIME_ONLY.matchEntire(input = trimmed)
             if (referenceDate == null || timed == null) {
                 null
             } else {
-                instantOf(date = referenceDate, match = timed, timeOffset = 0)
+                instantOf(date = referenceDate, match = timed, timeOffset = 0, zone = timeZone)
             }
         }
     }
@@ -41,7 +42,7 @@ class ParseFrameTimeUseCase {
      * The two patterns differ only by the leading date, so their time groups are addressed by
      * position: a named group that one of the patterns does not declare cannot even be asked for.
      */
-    private fun instantOf(date: LocalDate, match: MatchResult, timeOffset: Int): Instant? = runCatching {
+    private fun instantOf(date: LocalDate, match: MatchResult, timeOffset: Int, zone: TimeZone): Instant? = runCatching {
         LocalDateTime(
             year = date.year,
             monthNumber = date.monthNumber,
@@ -50,7 +51,7 @@ class ParseFrameTimeUseCase {
             minute = match.groupValues[timeOffset + MINUTE_GROUP].toInt(),
             second = match.groupValues[timeOffset + SECOND_GROUP].toIntOrNull() ?: 0,
             nanosecond = millisOf(typed = match.groupValues[timeOffset + MILLIS_GROUP]) * NANOS_PER_MILLI,
-        ).toInstant(timeZone = TimeZone.UTC)
+        ).toInstant(timeZone = zone)
     }.getOrNull()
 
     /** `.5` means half a second, so the typed digits are padded rather than read as they stand. */

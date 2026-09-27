@@ -1,7 +1,11 @@
 package dev.mj31.logger.client.app
 
+import dev.mj31.logger.client.app.usecase.ingest.date.ResolveStartDayUseCase
+import dev.mj31.logger.client.app.usecase.ingest.date.ResolveReferenceDateUseCase
+import dev.mj31.logger.client.app.fake.source.FakeLogFileExpander
 import com.google.common.truth.Truth.assertThat
 import dev.mj31.logger.client.data.source.LocalTextFileDataSource
+import dev.mj31.logger.client.data.source.archive.LocalLogFileExpander
 import dev.mj31.logger.client.data.source.UuidIdGenerator
 import dev.mj31.logger.client.domain.format.compile.FormatCompilationResult
 import kotlinx.coroutines.Dispatchers
@@ -18,8 +22,8 @@ import dev.mj31.logger.client.app.usecase.ingest.ImportLogFileWithFormatUseCase
 import dev.mj31.logger.client.app.usecase.ingest.ImportLogFileUseCase
 import dev.mj31.logger.client.domain.model.log.LogLevel
 import dev.mj31.logger.client.data.format.line.TemplateLogFormatCompiler
-import dev.mj31.logger.client.data.format.parse.RegexLogLineParserFactory
-import dev.mj31.logger.client.data.format.detect.HeuristicLogFormatDetector
+import dev.mj31.logger.client.data.format.parse.DispatchingLogLineParserFactory
+import dev.mj31.logger.client.data.format.detect.StructureFirstLogFormatDetector
 
 /**
  * End-to-end check of the import pipeline against the demo files shipped in `samples/`.
@@ -33,21 +37,30 @@ class SampleLogFilesIntegrationTest {
 
     private val loader = LogSourceLoader(
         dataSource = LocalTextFileDataSource(dispatcher = Dispatchers.Unconfined),
-        assembler = LogSourceAssembler(parserFactory = RegexLogLineParserFactory()),
+        assembler = LogSourceAssembler(parserFactory = DispatchingLogLineParserFactory()),
         idGenerator = UuidIdGenerator(),
-        clock = Clock.System,
-        timeZone = TimeZone.UTC,
     )
+
+    /** The real expander, so the integration test covers the path a chosen file actually travels. */
+    private val expander = LocalLogFileExpander(
+        cacheDirectory = File(System.getProperty("java.io.tmpdir"), "mjlogs-sample-cache"),
+        dispatcher = Dispatchers.Unconfined,
+    )
+
+    private val resolveReferenceDate = ResolveReferenceDateUseCase(timeZone = TimeZone.UTC)
 
     private val importFile = ImportLogFileUseCase(
         loader = loader,
-        detector = HeuristicLogFormatDetector(),
+        detector = StructureFirstLogFormatDetector(),
+        expander = expander,
+        resolveReferenceDate = resolveReferenceDate,
+        resolveStartDay = ResolveStartDayUseCase(timeZone = TimeZone.UTC),
         dispatcher = Dispatchers.Unconfined,
     )
 
     @Test
     fun `every shipped sample with a standard layout is detected and parsed`() = runTest {
-        val results = STANDARD_SAMPLES.map { name -> name to importFile(path = sample(name = name).path) }
+        val results = STANDARD_SAMPLES.map { name -> name to importFile(path = sample(name = name).path).single() }
 
         results.forEach { (name, result) ->
             assertThat(result).isInstanceOf(LogImportResult.Success::class.java)
@@ -61,7 +74,7 @@ class SampleLogFilesIntegrationTest {
     @Test
     fun `the three samples merge into one chronological session`() = runTest {
         val sources = STANDARD_SAMPLES
-            .map { name -> importFile(path = sample(name = name).path) }
+            .flatMap { name -> importFile(path = sample(name = name).path) }
             .filterIsInstance<LogImportResult.Success>()
             .map { it.source }
 
@@ -76,7 +89,7 @@ class SampleLogFilesIntegrationTest {
 
     @Test
     fun `stack traces are kept with the record they belong to`() = runTest {
-        val result = importFile(path = sample(name = "network.txt").path) as LogImportResult.Success
+        val result = importFile(path = sample(name = "network.txt").path).single() as LogImportResult.Success
 
         val withStackTrace = result.source.entries.filter { it.message.contains(other = "SocketTimeoutException") }
         assertThat(withStackTrace).isNotEmpty()
@@ -86,8 +99,8 @@ class SampleLogFilesIntegrationTest {
 
     @Test
     fun `levels and tags are recovered from every layout`() = runTest {
-        val logcat = (importFile(path = sample(name = "device-ui.txt").path) as LogImportResult.Success).source
-        val pipes = (importFile(path = sample(name = "backend-service.txt").path) as LogImportResult.Success).source
+        val logcat = (importFile(path = sample(name = "device-ui.txt").path).single() as LogImportResult.Success).source
+        val pipes = (importFile(path = sample(name = "backend-service.txt").path).single() as LogImportResult.Success).source
 
         assertThat(logcat.entries.map { it.tag }.distinct()).contains("Renderer")
         assertThat(logcat.entries.map { it.level }.distinct()).containsAtLeast(LogLevel.DEBUG, LogLevel.WARN)
@@ -97,7 +110,7 @@ class SampleLogFilesIntegrationTest {
 
     @Test
     fun `the deliberately exotic sample falls back to the manual format flow`() = runTest {
-        val detection = importFile(path = sample(name = "analytics-custom.txt").path)
+        val detection = importFile(path = sample(name = "analytics-custom.txt").path).single()
 
         assertThat(detection).isInstanceOf(LogImportResult.FormatRequired::class.java)
         val request = detection as LogImportResult.FormatRequired
@@ -111,7 +124,12 @@ class SampleLogFilesIntegrationTest {
         val compiled = TemplateLogFormatCompiler().compile(input = suggestion)
         assertThat(compiled).isInstanceOf(FormatCompilationResult.Success::class.java)
 
-        val imported = ImportLogFileWithFormatUseCase(loader = loader, dispatcher = Dispatchers.Unconfined)(
+        val imported = ImportLogFileWithFormatUseCase(
+            loader = loader,
+            expander = expander,
+            resolveReferenceDate = resolveReferenceDate,
+            dispatcher = Dispatchers.Unconfined,
+        )(
             path = request.path,
             spec = (compiled as FormatCompilationResult.Success).spec,
         )

@@ -1,5 +1,6 @@
 package dev.mj31.logger.client.app.features.logplayer.state
 
+import dev.mj31.logger.client.app.usecase.sync.ResolveSyncZoneUseCase
 import com.google.common.truth.Truth.assertThat
 import dev.mj31.logger.client.app.fake.LogPlayerFixtures
 import dev.mj31.logger.client.domain.player.PlaybackState
@@ -23,6 +24,7 @@ class LogPlayerStateAssemblerTest {
         findEntryAtVideoPosition = FindEntryAtVideoPositionUseCase(),
         mapVideoPositionToLogTime = MapVideoPositionToLogTimeUseCase(),
         resolveTimelineOverlap = ResolveTimelineOverlapUseCase(),
+        resolveSyncZone = ResolveSyncZoneUseCase(),
     )
 
     private val entries = listOf(

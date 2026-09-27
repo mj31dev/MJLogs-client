@@ -71,6 +71,42 @@ class LocalTextFileDataSourceTest {
         assertThat(ids.all { it.startsWith(prefix = "src-") }).isTrue()
     }
 
+    @Test
+    fun `a UTF-8 byte order mark is not left at the head of the first record`() = runTest {
+        val file = binaryFile(bytes = byteArrayOf(0xEF.toByte(), 0xBB.toByte(), 0xBF.toByte()) +
+            "first\nsecond".toByteArray(charset = Charsets.UTF_8))
+
+        val content = dataSource.read(path = file.absolutePath)
+
+        // Left in place the mark sits invisibly before the timestamp and stops the line matching.
+        assertThat(content.lines).containsExactly("first", "second").inOrder()
+    }
+
+    @Test
+    fun `a UTF-16 file is read through its byte order mark rather than as broken UTF-8`() = runTest {
+        val file = binaryFile(bytes = "first\nsecond".toByteArray(charset = Charsets.UTF_16LE)
+            .let { byteArrayOf(0xFF.toByte(), 0xFE.toByte()) + it })
+
+        val content = dataSource.read(path = file.absolutePath)
+
+        assertThat(content.lines).containsExactly("first", "second").inOrder()
+    }
+
+    @Test
+    fun `a file with no mark is still read as UTF-8`() = runTest {
+        val file = temporaryFile(content = "привет\nmir")
+
+        val content = dataSource.read(path = file.absolutePath)
+
+        assertThat(content.lines).containsExactly("привет", "mir").inOrder()
+    }
+
+    private fun binaryFile(bytes: ByteArray): File =
+        File.createTempFile("logger-client", ".log", temporaryDirectory).apply {
+            writeBytes(array = bytes)
+            deleteOnExit()
+        }
+
     private fun temporaryFile(content: String): File =
         File.createTempFile("logger-client", ".txt", temporaryDirectory).apply {
             writeText(text = content, charset = Charsets.UTF_8)

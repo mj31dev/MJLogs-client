@@ -1,5 +1,10 @@
 package dev.mj31.logger.client.app.features.logplayer.state
 
+import dev.mj31.logger.client.app.features.logplayer.state.duplicate.DuplicateRequestUiState
+import dev.mj31.logger.client.app.features.logplayer.state.ingest.SourcePreambleUiState
+import dev.mj31.logger.client.app.features.logplayer.state.ingest.StartDayRequestUiState
+import dev.mj31.logger.client.app.features.logplayer.state.ingest.ZoneRequestUiState
+import kotlinx.datetime.TimeZone
 import dev.mj31.logger.client.domain.model.log.LogEntry
 import dev.mj31.logger.client.domain.model.log.LogFilter
 import dev.mj31.logger.client.app.features.logplayer.state.ui.LogSourceUi
@@ -8,6 +13,7 @@ import dev.mj31.logger.client.app.features.logplayer.state.ui.AutoSyncUiState
 import dev.mj31.logger.client.app.features.logplayer.state.ui.SyncUiState
 import dev.mj31.logger.client.app.features.logplayer.state.ui.WorkspaceUiState
 import dev.mj31.logger.client.app.features.logplayer.state.format.FormatRequestUiState
+import dev.mj31.logger.client.app.features.logplayer.state.ingest.UnsupportedImportUiState
 
 /**
  * Single immutable snapshot rendered by the screen.
@@ -28,7 +34,18 @@ data class LogPlayerState(
     val sync: SyncUiState = SyncUiState(),
     val autoSync: AutoSyncUiState = AutoSyncUiState(),
     val formatRequest: FormatRequestUiState? = null,
+    /** The file whose type the workspace does not know, waiting for the user to insist or not. */
+    val unsupportedImport: UnsupportedImportUiState? = null,
+    /** The file that runs past midnight and could belong to either of two days. */
+    val startDayRequest: StartDayRequestUiState? = null,
     val isImporting: Boolean = false,
+    val preamble: SourcePreambleUiState? = null,
+    val zoneRequest: ZoneRequestUiState? = null,
+    val duplicateRequest: DuplicateRequestUiState? = null,
+    /** The zone each file's times are shown in, by source id. */
+    val sourceTimeZones: Map<String, TimeZone> = emptyMap(),
+    /** True once some file is not read in UTC, which is when UTC is worth a column of its own. */
+    val showUtcColumn: Boolean = false,
     val workspace: WorkspaceUiState = WorkspaceUiState(),
 ) {
 

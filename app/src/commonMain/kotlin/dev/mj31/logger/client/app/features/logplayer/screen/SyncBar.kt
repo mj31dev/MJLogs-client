@@ -1,5 +1,6 @@
 package dev.mj31.logger.client.app.features.logplayer.screen
 
+import dev.mj31.logger.client.app.theme.type.ContentType
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,7 +18,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import dev.mj31.logger.client.app.features.logplayer.LogPlayerIntent
 import dev.mj31.logger.client.app.features.logplayer.state.LogPlayerState
@@ -55,6 +55,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import dev.mj31.logger.client.app.features.logplayer.sync.FrameTimePickerDialog
 import dev.mj31.logger.client.app.resources.sync_frame_time_pick
+import dev.mj31.logger.client.app.resources.sync_frame_zone
+import androidx.compose.ui.platform.testTag
+import dev.mj31.logger.client.app.theme.Spacing
+
+/** Test tag of the control naming the zone the frame's clock is read in, which opens its chooser. */
+const val SYNC_FRAME_ZONE_TAG = "sync-frame-zone"
 
 /**
  * Bottom bar driving the manual synchronization.
@@ -75,11 +81,11 @@ fun SyncBar(
         modifier = modifier
             .fillMaxWidth()
             .background(color = MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = Spacing.large, vertical = Spacing.small),
     ) {
         FrameTimeRow(state = state, onIntent = onIntent)
 
-        Spacer(modifier = Modifier.height(height = 8.dp))
+        Spacer(modifier = Modifier.height(height = Spacing.small))
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(weight = 1f)) {
@@ -96,25 +102,25 @@ fun SyncBar(
                 )
                 Text(
                     text = syncDetails(state = state),
-                    style = MaterialTheme.typography.bodySmall,
+                    // The correlation is figures to compare with the frame; the hint before it is prose.
+                    style = if (state.sync.isSynced) ContentType.figures else MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontFamily = FontFamily.Monospace,
                 )
             }
 
             FollowVideoToggle(state = state, onIntent = onIntent)
 
-            Spacer(modifier = Modifier.width(width = 12.dp))
+            Spacer(modifier = Modifier.width(width = Spacing.medium))
 
             AutoSyncMenu(autoSync = state.autoSync, onIntent = onIntent)
 
-            Spacer(modifier = Modifier.width(width = 8.dp))
+            Spacer(modifier = Modifier.width(width = Spacing.small))
 
             if (state.sync.isSynced) {
                 TextButton(onClick = { onIntent(LogPlayerIntent.ClearSynchronization) }) {
                     Text(text = stringResource(resource = Res.string.sync_unlink))
                 }
-                Spacer(modifier = Modifier.width(width = 8.dp))
+                Spacer(modifier = Modifier.width(width = Spacing.small))
             }
 
             Button(
@@ -162,6 +168,7 @@ private fun FrameTimeRow(state: LogPlayerState, onIntent: (LogPlayerIntent) -> U
     if (isPickerOpen) {
         FrameTimePickerDialog(
             initial = state.sync.frameTimeDefault,
+            timeZone = state.sync.zone.timeZone,
             onDismiss = { isPickerOpen = false },
             onConfirm = { dateMillis, hour, minute ->
                 isPickerOpen = false
@@ -193,11 +200,20 @@ private fun FrameTimeRow(state: LogPlayerState, onIntent: (LogPlayerIntent) -> U
                     },
                 )
             },
-            textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+            textStyle = ContentType.figures,
             modifier = Modifier.weight(weight = 1f),
         )
 
-        Spacer(modifier = Modifier.width(width = 8.dp))
+        Spacer(modifier = Modifier.width(width = Spacing.small))
+
+        // The zone the typed time is read in, named where the time is typed: the same digits mean a
+        // different moment in another zone, and nothing else on the bar would say which one.
+        TextButton(
+            onClick = { onIntent(LogPlayerIntent.RequestFrameTimeZone) },
+            modifier = Modifier.testTag(tag = SYNC_FRAME_ZONE_TAG),
+        ) {
+            Text(text = stringResource(resource = Res.string.sync_frame_zone, state.sync.zone.id))
+        }
 
         TextButton(onClick = { isPickerOpen = true }) {
             Text(text = stringResource(resource = Res.string.sync_frame_time_pick))
@@ -216,8 +232,10 @@ private fun FrameTimeRow(state: LogPlayerState, onIntent: (LogPlayerIntent) -> U
 private fun syncDetails(state: LogPlayerState): String {
     if (!state.sync.isSynced) return stringResource(resource = Res.string.sync_hint)
 
+    // In the zone the screen's clock is read in, so the time here can be compared with the frame.
+    val zone = state.sync.zone.timeZone
     val playheadTime = state.sync.logTimeAtPlayhead
-        ?.let { instant -> formatLogTime(instant = instant) }
+        ?.let { instant -> formatLogTime(instant = instant, timeZone = zone) }
         ?: stringResource(resource = Res.string.sync_unknown_time)
     val covered = state.sync.overlap?.overlap
     val coverage = if (covered == null) {
@@ -225,8 +243,8 @@ private fun syncDetails(state: LogPlayerState): String {
     } else {
         stringResource(
             resource = Res.string.sync_coverage,
-            formatLogTime(instant = covered.start),
-            formatLogTime(instant = covered.end),
+            formatLogTime(instant = covered.start, timeZone = zone),
+            formatLogTime(instant = covered.end, timeZone = zone),
         )
     }
     val mapping = stringResource(

@@ -1,5 +1,7 @@
 package dev.mj31.logger.client.app.fake.repository
 
+import dev.mj31.logger.client.app.usecase.ingest.source.RebuildSourceUseCase
+import dev.mj31.logger.client.app.usecase.ingest.duplicate.MergeSourcePartsUseCase
 import dev.mj31.logger.client.app.features.logplayer.dependencies.LogPlayerRepositories
 import dev.mj31.logger.client.app.features.logplayer.dependencies.LogPlayerWorkspace
 import dev.mj31.logger.client.app.usecase.ingest.source.LogSourceLoader
@@ -7,6 +9,9 @@ import dev.mj31.logger.client.app.usecase.workspace.CaptureWorkspaceUseCase
 import dev.mj31.logger.client.app.usecase.workspace.ClearWorkspaceUseCase
 import dev.mj31.logger.client.app.usecase.workspace.PersistWorkspaceUseCase
 import dev.mj31.logger.client.app.usecase.workspace.RestoreWorkspaceUseCase
+import kotlinx.datetime.TimeZone
+import dev.mj31.logger.client.app.usecase.ingest.date.ResolveReferenceDateUseCase
+import dev.mj31.logger.client.app.fake.source.FakeLogFileExpander
 import dev.mj31.logger.client.app.usecase.workspace.session.CloseSessionPackageUseCase
 import dev.mj31.logger.client.app.usecase.workspace.session.OpenSessionPackageUseCase
 import dev.mj31.logger.client.app.usecase.workspace.session.SaveSessionPackageUseCase
@@ -28,7 +33,12 @@ fun testWorkspace(
     packageStore: SessionPackageStore = FakeSessionPackageStore(),
 ): LogPlayerWorkspace {
     val restore = RestoreWorkspaceUseCase(
-        loader = loader,
+        rebuildSource = RebuildSourceUseCase(
+            loader = loader,
+            expander = FakeLogFileExpander(),
+            resolveReferenceDate = ResolveReferenceDateUseCase(timeZone = TimeZone.UTC),
+            mergeParts = MergeSourcePartsUseCase(),
+        ),
         sessionRepository = repositories.session,
         videoRepository = repositories.video,
         syncRepository = repositories.sync,

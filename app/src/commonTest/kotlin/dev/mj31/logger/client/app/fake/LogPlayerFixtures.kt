@@ -6,6 +6,7 @@ import dev.mj31.logger.client.domain.source.TextFileContent
 import kotlin.time.Instant
 import kotlin.time.Duration.Companion.milliseconds
 import dev.mj31.logger.client.domain.model.log.LogSource
+import kotlinx.datetime.LocalDate
 import dev.mj31.logger.client.domain.model.log.LogLevel
 import dev.mj31.logger.client.domain.model.log.LogEntry
 import dev.mj31.logger.client.app.fake.format.ScriptedLogLineParser
@@ -17,6 +18,9 @@ import dev.mj31.logger.client.app.fake.format.ScriptedLogLineParser
  * session is only chronological when the merge really sorts across files.
  */
 object LogPlayerFixtures {
+
+    /** Fixed day a dateless timestamp is completed with, so a fixture never depends on today. */
+    val REFERENCE_DATE: LocalDate = LocalDate(year = 2024, monthNumber = 1, dayOfMonth = 15)
 
     /** Arbitrary but fixed session origin; every relative timestamp is derived from it. */
     val BASE: Instant = Instant.parse("2024-05-01T10:00:00Z")
@@ -41,16 +45,16 @@ object LogPlayerFixtures {
     const val FOURTH_ENTRY_ID: String = "src-2:2"
     const val FIFTH_ENTRY_ID: String = "src-1:3"
 
-    val FIRST_SPEC: LogFormatSpec = LogFormatSpec(
+    val FIRST_SPEC: LogFormatSpec.Regex = LogFormatSpec.Regex(
         name = "logcat",
         linePattern = "(?<ts>\\d+)\\|(?<lvl>\\w+)\\|(?<tag>[^|]*)\\|(?<msg>.*)",
         timestampPattern = "epochMillis",
         origin = FormatOrigin.DETECTED,
     )
 
-    val SECOND_SPEC: LogFormatSpec = FIRST_SPEC.copy(name = "syslog")
+    val SECOND_SPEC: LogFormatSpec.Regex = FIRST_SPEC.copy(name = "syslog")
 
-    val MANUAL_SPEC: LogFormatSpec = FIRST_SPEC.copy(name = "manual", origin = FormatOrigin.USER_DEFINED)
+    val MANUAL_SPEC: LogFormatSpec.Regex = FIRST_SPEC.copy(name = "manual", origin = FormatOrigin.USER_DEFINED)
 
     /** Instant located [offsetMillis] after [BASE]; negative offsets move into the past. */
     fun at(offsetMillis: Long): Instant = BASE + offsetMillis.milliseconds
@@ -127,6 +131,7 @@ object LogPlayerFixtures {
         path: String = FIRST_PATH,
         format: LogFormatSpec = FIRST_SPEC,
         entries: List<LogEntry> = emptyList(),
+        referenceDate: LocalDate = REFERENCE_DATE,
         skippedLineCount: Int = 0,
     ): LogSource = LogSource(
         id = id,
@@ -134,6 +139,7 @@ object LogPlayerFixtures {
         path = path,
         format = format,
         entries = entries,
+        referenceDate = referenceDate,
         skippedLineCount = skippedLineCount,
     )
 }

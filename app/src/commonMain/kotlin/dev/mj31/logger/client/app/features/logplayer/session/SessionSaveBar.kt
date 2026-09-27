@@ -1,5 +1,7 @@
 package dev.mj31.logger.client.app.features.logplayer.session
 
+import androidx.compose.foundation.BorderStroke
+import dev.mj31.logger.client.app.theme.Spacing
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -39,9 +41,9 @@ fun SessionSaveBar(
     Surface(
         modifier = modifier.fillMaxWidth().semantics { contentDescription = SAVE_BAR_TAG },
         color = MaterialTheme.colorScheme.surfaceVariant,
-        tonalElevation = 3.dp,
+        border = BorderStroke(width = BORDER_WIDTH.dp, color = MaterialTheme.colorScheme.outline),
     ) {
-        Column(modifier = Modifier.padding(all = 12.dp), verticalArrangement = Arrangement.spacedBy(space = 6.dp)) {
+        Column(modifier = Modifier.padding(all = Spacing.medium), verticalArrangement = Arrangement.spacedBy(space = Spacing.small)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -79,3 +81,5 @@ fun SessionSaveBar(
 
 /** Handle the UI tests find this bar by. */
 const val SAVE_BAR_TAG: String = "session-save-bar"
+
+private const val BORDER_WIDTH = 1

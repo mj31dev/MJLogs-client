@@ -1,12 +1,19 @@
 package dev.mj31.logger.client.app.di
 
+import dev.mj31.logger.client.app.usecase.ingest.duplicate.DetectDuplicateUseCase
+import dev.mj31.logger.client.app.usecase.ingest.duplicate.MergeSourcePartsUseCase
+import dev.mj31.logger.client.app.usecase.ingest.source.RebuildSourceUseCase
+import dev.mj31.logger.client.app.usecase.ingest.zone.ChangeSourceZoneUseCase
+import dev.mj31.logger.client.app.usecase.sync.ResolveSyncZoneUseCase
 import dev.mj31.logger.client.app.features.logplayer.dependencies.LogPlayerFormatTools
 import dev.mj31.logger.client.app.features.logplayer.dependencies.LogPlayerRepositories
 import dev.mj31.logger.client.app.features.logplayer.LogPlayerStore
 import dev.mj31.logger.client.app.features.logplayer.dependencies.LogPlayerUseCases
 import dev.mj31.logger.client.app.features.logplayer.dependencies.LogPlayerWorkspace
 import dev.mj31.logger.client.app.features.sessions.SessionsStore
+import dev.mj31.logger.client.app.usecase.ingest.date.ResolveReferenceDateUseCase
 import dev.mj31.logger.client.app.usecase.ingest.source.LogSourceLoader
+import dev.mj31.logger.client.domain.source.archive.LogFileExpander
 import dev.mj31.logger.client.app.usecase.workspace.CaptureWorkspaceUseCase
 import dev.mj31.logger.client.app.usecase.workspace.ClearWorkspaceUseCase
 import dev.mj31.logger.client.app.usecase.workspace.PersistWorkspaceUseCase
@@ -68,6 +75,9 @@ interface PresentationBindings {
         importLogFileWithFormat: ImportLogFileWithFormatUseCase,
         autoSynchronize: AutoSynchronizeUseCase,
         syncRepository: SyncRepository,
+        changeSourceZone: ChangeSourceZoneUseCase,
+        detectDuplicate: DetectDuplicateUseCase,
+        mergeSourceParts: MergeSourcePartsUseCase,
     ): LogPlayerUseCases = LogPlayerUseCases(
         autoSynchronize = autoSynchronize,
         mergeLogSources = mergeLogSources,
@@ -82,6 +92,10 @@ interface PresentationBindings {
         clearSynchronization = ClearSynchronizationUseCase(syncRepository = syncRepository),
         mapVideoPositionToLogTime = MapVideoPositionToLogTimeUseCase(),
         mapLogTimeToVideoPosition = MapLogTimeToVideoPositionUseCase(),
+        changeSourceZone = changeSourceZone,
+        resolveSyncZone = ResolveSyncZoneUseCase(),
+        detectDuplicate = detectDuplicate,
+        mergeSourceParts = mergeSourceParts,
     )
 
     @Provides
@@ -103,11 +117,11 @@ interface PresentationBindings {
         sessionRepository: LogSessionRepository,
         videoRepository: VideoRepository,
         syncRepository: SyncRepository,
-        loader: LogSourceLoader,
+        rebuildSource: RebuildSourceUseCase,
         clock: Clock,
     ): LogPlayerWorkspace {
         val restore = RestoreWorkspaceUseCase(
-            loader = loader,
+            rebuildSource = rebuildSource,
             sessionRepository = sessionRepository,
             videoRepository = videoRepository,
             syncRepository = syncRepository,
@@ -183,6 +197,7 @@ interface PresentationBindings {
         findEntryAtVideoPosition = FindEntryAtVideoPositionUseCase(),
         mapVideoPositionToLogTime = MapVideoPositionToLogTimeUseCase(),
         resolveTimelineOverlap = ResolveTimelineOverlapUseCase(),
+        resolveSyncZone = ResolveSyncZoneUseCase(),
     )
 
     @AppScope

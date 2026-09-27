@@ -8,6 +8,12 @@ object TimestampPatternTokens {
     const val MONTH: String = "MM"
     const val DAY: String = "dd"
     const val HOUR: String = "HH"
+
+    /** Hour on a twelve hour clock; without [MERIDIEM] beside it the reading is ambiguous. */
+    const val HOUR_12: String = "hh"
+
+    /** The AM or PM marker, in any of the spellings `AM`, `am`, `A.M.`, `p.m.`. */
+    const val MERIDIEM: String = "a"
     const val MINUTE: String = "mm"
     const val SECOND: String = "ss"
     const val MILLI: String = "SSS"
@@ -29,7 +35,30 @@ object TimestampPatternTokens {
         MONTH,
         DAY,
         HOUR,
+        HOUR_12,
         MINUTE,
         SECOND,
+        MERIDIEM,
     )
+
+    /**
+     * True when [pattern] reads a twelve hour clock but nothing tells morning from afternoon.
+     *
+     * Such a timestamp genuinely denotes two moments twelve hours apart, and no amount of context in
+     * the file resolves it — which is why this is one of the two cases where the user is asked rather
+     * than guessed at.
+     */
+    fun isHourAmbiguous(pattern: String): Boolean =
+        pattern.contains(other = HOUR_12) && !pattern.contains(other = MERIDIEM)
+
+    /**
+     * True when [pattern] places a record on a calendar day by itself.
+     *
+     * A pattern that does not needs a day supplied from outside, and is therefore the only kind that
+     * can be put on the wrong one. An epoch reading carries everything and needs nothing.
+     */
+    fun carriesDate(pattern: String): Boolean =
+        pattern.contains(other = EPOCH_MILLIS) ||
+            pattern.contains(other = EPOCH_SECONDS) ||
+            listOf(YEAR_FOUR, YEAR_TWO, MONTH_NAME, MONTH, DAY).any { pattern.contains(other = it) }
 }

@@ -176,18 +176,41 @@ internal class SessionPackageWriter(
     }
 
     private fun bundleSource(files: MutableList<BundledFile>, index: Int, ref: LogSourceRef): LogSourceRef {
-        val file = File(ref.path)
-        if (!file.isFile) return ref
-        val entry = SessionPackageLayout.logEntryName(index = index, fileName = ref.name)
+        val parts = ref.extraParts.mapIndexed { part, extra ->
+            val entry = SessionPackageLayout.logPartEntryName(index = index, part = part, fileName = extra.name)
+            bundled(files = files, path = extra.path, entry = entry)?.let { bundledEntry -> extra.copy(path = bundledEntry) }
+                ?: extra
+        }
+        val entry = bundled(files = files, path = ref.path, entry = SessionPackageLayout.logEntryName(index = index, fileName = ref.name))
+        return ref.copy(path = entry ?: ref.path, extraParts = parts)
+    }
+
+    /** Queues [path] under [entry] and returns the entry, or `null` when the file is gone. */
+    private fun bundled(files: MutableList<BundledFile>, path: String, entry: String): String? {
+        val file = File(path)
+        if (!file.isFile) return null
         files += BundledFile(source = file, entryName = entry)
-        return ref.copy(path = entry)
+        return entry
     }
 
     /** Turns the extracted absolute paths of an opened package back into the names it stores. */
     private fun toEntryPaths(snapshot: WorkspaceSnapshot): WorkspaceSnapshot = snapshot.copy(
         logSources = snapshot.logSources.mapIndexed { index, ref ->
-            if (SessionPackageLayout.isBundledEntry(path = ref.path)) ref
-            else ref.copy(path = SessionPackageLayout.logEntryName(index = index, fileName = ref.name))
+            val path = if (SessionPackageLayout.isBundledEntry(path = ref.path)) {
+                ref.path
+            } else {
+                SessionPackageLayout.logEntryName(index = index, fileName = ref.name)
+            }
+            ref.copy(
+                path = path,
+                extraParts = ref.extraParts.mapIndexed { part, extra ->
+                    if (SessionPackageLayout.isBundledEntry(path = extra.path)) {
+                        extra
+                    } else {
+                        extra.copy(path = SessionPackageLayout.logPartEntryName(index = index, part = part, fileName = extra.name))
+                    }
+                },
+            )
         },
         video = snapshot.video?.let { media ->
             if (SessionPackageLayout.isBundledEntry(path = media.path)) media

@@ -8,18 +8,21 @@ import dev.mj31.logger.client.domain.model.log.LogSource
 /**
  * Data shown by the dialog that asks the user to describe an unrecognized log format.
  *
- * [suggestion] is the layout inferred from [sampleLines]; the dialog pre-fills its inputs with it so
- * that confirming is usually enough.
+ * [draft] is what is currently typed, held whole rather than as loose strings: a log can be described
+ * as a line layout, as a JSON object or as a table, and those three have almost no fields in common.
+ * Its variant is also what the dialog shows — switching shape *is* replacing the draft.
+ *
+ * [suggestion] is the layout inferred from [sampleLines]; the dialog opens on it so that confirming
+ * is usually enough.
  */
 data class FormatRequestUiState(
     val path: String,
     val fileName: String,
     val sampleLines: List<String>,
     val reason: String,
-    val timestampPattern: String = FormatDefaults.TIMESTAMP_PATTERN,
-    val structureTemplate: String = FormatDefaults.STRUCTURE_TEMPLATE,
+    val draft: ManualFormatInput = FormatDefaults.template,
     val preview: FormatPreview = FormatPreview.Empty,
-    val suggestion: ManualFormatInput? = null,
+    val suggestion: ManualFormatInput.Template? = null,
     val error: FormatError? = null,
     /** Set when the file already parsed and only needs a confirmation that nothing is missing. */
     val detectedSource: LogSource? = null,
@@ -27,6 +30,10 @@ data class FormatRequestUiState(
 
     val isConfirmation: Boolean
         get() = detectedSource != null
+
+    /** Which set of inputs the dialog shows, and which of them the buttons switch between. */
+    val kind: FormatKind
+        get() = FormatKind.of(input = draft)
 
     /**
      * Error to show right now: the one reported by the last import attempt, or, while the user is
@@ -37,25 +44,22 @@ data class FormatRequestUiState(
             FormatError(message = it.message, field = it.field)
         }
 
+    fun errorFor(field: FormatErrorField): String? = activeError?.takeIf { it.field == field }?.message
+
     val timestampPatternError: String?
-        get() = messageFor(field = FormatErrorField.TIMESTAMP_PATTERN)
+        get() = errorFor(field = FormatErrorField.TIMESTAMP_PATTERN)
 
     val structureTemplateError: String?
-        get() = messageFor(field = FormatErrorField.STRUCTURE_TEMPLATE)
+        get() = errorFor(field = FormatErrorField.STRUCTURE_TEMPLATE)
 
     /** Fallback for a failure that belongs to no input, shown as a notice instead of a field error. */
     val generalError: String?
-        get() = messageFor(field = FormatErrorField.NONE)
+        get() = errorFor(field = FormatErrorField.NONE)
 
-    private fun messageFor(field: FormatErrorField): String? = activeError?.takeIf { it.field == field }?.message
-
-    /** The draft currently typed by the user, ready to be compiled. */
-    val draft: ManualFormatInput
-        get() = ManualFormatInput(timestampPattern = timestampPattern, structureTemplate = structureTemplate)
-
-    /** Applying a format that reads nothing would only add an empty source to the session. */
+    /**
+     * Applying a format that reads nothing would only add an empty source to the session, so the
+     * preview — not the state of the boxes — decides. It is the same parser the import would use.
+     */
     val canApply: Boolean
-        get() = timestampPattern.isNotBlank() &&
-            structureTemplate.isNotBlank() &&
-            (preview as? FormatPreview.Ready)?.matchedLines?.let { it > 0 } == true
+        get() = (preview as? FormatPreview.Ready)?.matchedLines?.let { it > 0 } == true
 }

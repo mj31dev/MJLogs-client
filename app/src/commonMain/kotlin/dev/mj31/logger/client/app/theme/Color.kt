@@ -11,6 +11,18 @@ import androidx.compose.ui.graphics.Color
  * Depth is carried by the three surface levels rather than by shadows: a shadow over a video frame
  * reads as a rendering artefact, and a thousand shadowed log rows are a grey mess. `background` is
  * the window, `surface` is a pane or a card, `surfaceVariant` is something inset inside one.
+ *
+ * Material carries a second, five step family — `surfaceContainerLowest` through
+ * `surfaceContainerHighest` — and reaches for it on its own: a dialog is painted on
+ * `surfaceContainerHigh` whether or not anyone chose that colour. Left at their defaults those five
+ * are the framework's own lilac greys, which belong to no scheme here, so every dialog in the
+ * application was drawn on a colour the palette does not contain. They are therefore mapped onto the
+ * three levels above rather than left to chance, and the mapping is what makes the written rule —
+ * "a dialog is `surface`" — actually true.
+ *
+ * The same holds for `primaryContainer` and `secondaryContainer`: a segmented button, a chip or a
+ * filled tonal button paints its selected half with them without being asked. They are mapped onto
+ * the inset level, because "selected" is exactly what `surfaceVariant` means here.
  */
 private val DarkBackground = Color(0xFF0B1120)
 private val DarkSurface = Color(0xFF111C31)
@@ -48,6 +60,15 @@ val DarkColors: ColorScheme = darkColorScheme(
     background = DarkBackground,
     surface = DarkSurface,
     surfaceVariant = DarkSurfaceVariant,
+    surfaceContainerLowest = DarkBackground,
+    surfaceContainerLow = DarkBackground,
+    surfaceContainer = DarkSurface,
+    surfaceContainerHigh = DarkSurface,
+    surfaceContainerHighest = DarkSurfaceVariant,
+    primaryContainer = DarkSurfaceVariant,
+    onPrimaryContainer = DarkOnSurface,
+    secondaryContainer = DarkSurfaceVariant,
+    onSecondaryContainer = DarkOnSurface,
     outline = DarkOutline,
     onBackground = DarkOnBackground,
     onSurface = DarkOnSurface,
@@ -64,6 +85,15 @@ val LightColors: ColorScheme = lightColorScheme(
     background = LightBackground,
     surface = LightSurface,
     surfaceVariant = LightSurfaceVariant,
+    surfaceContainerLowest = LightBackground,
+    surfaceContainerLow = LightBackground,
+    surfaceContainer = LightSurface,
+    surfaceContainerHigh = LightSurface,
+    surfaceContainerHighest = LightSurfaceVariant,
+    primaryContainer = LightSurfaceVariant,
+    onPrimaryContainer = LightOnSurface,
+    secondaryContainer = LightSurfaceVariant,
+    onSecondaryContainer = LightOnSurface,
     outline = LightOutline,
     onBackground = LightOnBackground,
     onSurface = LightOnSurface,

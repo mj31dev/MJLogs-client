@@ -1,5 +1,9 @@
 package dev.mj31.logger.client.app.features.logplayer
 
+import dev.mj31.logger.client.app.features.logplayer.state.duplicate.DuplicateChoice
+import kotlinx.datetime.LocalDate
+import dev.mj31.logger.client.domain.format.compile.ManualFormatInput
+import dev.mj31.logger.client.app.features.logplayer.state.format.FormatKind
 import dev.mj31.logger.client.domain.model.log.LogFilter
 import dev.mj31.logger.client.domain.player.VideoStep
 
@@ -22,10 +26,16 @@ sealed interface LogPlayerIntent {
     data class ImportLogFiles(val paths: List<String>) : LogPlayerIntent
 
     /** The user edited the format under construction; the preview follows every keystroke. */
-    data class UpdateFormatDraft(
-        val timestampPattern: String,
-        val structureTemplate: String,
-    ) : LogPlayerIntent
+    data class UpdateFormatDraft(val draft: ManualFormatInput) : LogPlayerIntent
+
+    /**
+     * The user says the file is a different shape than the one on offer.
+     *
+     * The draft is replaced rather than converted: a structure template and a set of JSON keys have
+     * nothing to carry across, and pretending otherwise would leave half-translated nonsense in the
+     * boxes. The timestamp pattern is the one thing that does carry, and it does.
+     */
+    data class SelectFormatKind(val kind: FormatKind) : LogPlayerIntent
 
     /** Imports the pending file with the format currently drafted in the dialog. */
     data object SubmitManualFormat : LogPlayerIntent
@@ -34,6 +44,24 @@ sealed interface LogPlayerIntent {
     data object AcceptDetectedFormat : LogPlayerIntent
 
     data object DismissFormatRequest : LogPlayerIntent
+
+    /** The user insists on a file whose extension the workspace does not recognize. */
+    data object ConfirmUnsupportedImport : LogPlayerIntent
+
+    data object DismissUnsupportedImport : LogPlayerIntent
+
+    /** The user says which of the two days the file that runs past midnight belongs to. */
+    data class ChooseStartDay(val day: LocalDate) : LogPlayerIntent
+
+    data object DismissStartDayRequest : LogPlayerIntent
+
+    /** Answers the question about a file that repeats one already open. */
+    data class ResolveDuplicate(val choice: DuplicateChoice) : LogPlayerIntent
+
+    /** Opens what a file says about itself before its first record. */
+    data class ShowSourcePreamble(val sourceId: String) : LogPlayerIntent
+
+    data object DismissSourcePreamble : LogPlayerIntent
 
     data class UpdateFilter(val filter: LogFilter) : LogPlayerIntent
 
@@ -91,6 +119,25 @@ sealed interface LogPlayerIntent {
     data object CancelClockRegion : LogPlayerIntent
 
     data object CancelAutoSync : LogPlayerIntent
+
+    /**
+     * Everything about the time zone something is read in.
+     *
+     * One family because one dialog serves all of it: the file a zone is chosen for, or the clock on
+     * the screen, is decided when the dialog opens, and choosing only says which zone.
+     */
+    sealed interface Zone : LogPlayerIntent
+
+    /** Opens the zone choice for one file. */
+    data class RequestSourceZone(val sourceId: String) : Zone
+
+    /** Opens the zone choice for the clock on the screen. */
+    data object RequestFrameTimeZone : Zone
+
+    /** Applies a zone to whatever the open choice is for; `null` hands the decision back. */
+    data class ChooseZone(val zoneId: String?) : Zone
+
+    data object DismissZoneRequest : Zone
 
     /**
      * Everything that treats the workspace as a file rather than as something to look at.

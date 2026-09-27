@@ -21,18 +21,48 @@ class CompiledTimestampPattern internal constructor(
 
     private val hasDateField: Boolean = fields.any { it in TimestampField.dateFields }
 
+    /**
+     * Anchored form of [regexSource], used when the timestamp arrives as a field of its own.
+     *
+     * A structured record hands over the value already separated from the rest of the line, so the
+     * whole value has to be the timestamp; embedding the very same fragment keeps epoch handling,
+     * offsets and midnight rollover identical to the plain text path instead of forking them.
+     */
+    private val standaloneRegex: Regex by lazy { Regex(pattern = "^\\s*(?:$regexSource)\\s*$") }
+
+    /** Returns the instant described by [text], which must hold nothing but a timestamp. */
+    fun resolve(text: String, context: TimestampResolutionContext): Instant? {
+        val match = standaloneRegex.find(input = text) ?: return null
+        return resolve(match = match, context = context)
+    }
+
     /** Returns the instant described by [match], or `null` when the captured values are not a valid date. */
     fun resolve(match: MatchResult, context: TimestampResolutionContext): Instant? {
         val groups = match.groups
         val epoch = epochOf(groups = groups)
         if (epoch != null) return epoch
-        val dateTime = localDateTimeOf(groups = groups, referenceDate = context.referenceDate)
-        val offset = offsetOf(groups = groups, defaultMinutes = context.utcOffsetMinutes)
-        return if (dateTime == null || offset == null) {
-            null
+        val dateTime = localDateTimeOf(groups = groups, referenceDate = context.referenceDate) ?: return null
+        val instant = if (TimestampField.OFFSET in fields) {
+            dateTime.toInstant(offset = explicitOffsetOf(groups = groups) ?: return null)
         } else {
-            applyMidnightRollover(instant = dateTime.toInstant(offset = offset), previous = context.previous)
+            dateTime.toInstant(timeZone = context.zone)
         }
+        return applyMidnightRollover(instant = instant, previous = context.previous)
+    }
+
+    /**
+     * The offset the line wrote beside its time, in seconds, or `null` when the pattern has none.
+     *
+     * Separate from [resolve] because almost no caller needs it: it is asked for once per record,
+     * and costs nothing for a pattern that carries no offset.
+     */
+    fun explicitOffsetSeconds(match: MatchResult): Int? =
+        if (TimestampField.OFFSET in fields) explicitOffsetOf(groups = match.groups)?.totalSeconds else null
+
+    /** [explicitOffsetSeconds] for a value that holds nothing but a timestamp. */
+    fun explicitOffsetSeconds(text: String): Int? {
+        if (TimestampField.OFFSET !in fields) return null
+        return standaloneRegex.find(input = text)?.let { explicitOffsetSeconds(match = it) }
     }
 
     private fun epochOf(groups: MatchGroupCollection): Instant? {
@@ -53,12 +83,29 @@ class CompiledTimestampPattern internal constructor(
                 year = year,
                 monthNumber = month,
                 dayOfMonth = day,
-                hour = intOf(groups = groups, field = TimestampField.HOUR),
+                hour = hourOf(groups = groups),
                 minute = intOf(groups = groups, field = TimestampField.MINUTE),
                 second = intOf(groups = groups, field = TimestampField.SECOND),
                 nanosecond = nanosecondOf(groups = groups),
             )
         }.getOrNull()
+    }
+
+    /**
+     * Reads the hour from whichever clock the pattern declares.
+     *
+     * With no marker beside a twelve hour reading the value is taken at face value rather than
+     * guessed at: the reading really is ambiguous, and the ambiguity is put to the user upstream
+     * instead of being silently resolved one way here.
+     */
+    private fun hourOf(groups: MatchGroupCollection): Int {
+        valueOf(groups = groups, field = TimestampField.HOUR)?.toIntOrNull()?.let { return it }
+        val hour = valueOf(groups = groups, field = TimestampField.HOUR_12)?.toIntOrNull() ?: return 0
+        return when (valueOf(groups = groups, field = TimestampField.MERIDIEM)?.lowercase()?.firstOrNull()) {
+            'p' -> if (hour == NOON) NOON else hour + NOON
+            'a' -> if (hour == NOON) 0 else hour
+            else -> hour
+        }
     }
 
     private fun monthOf(groups: MatchGroupCollection): Int? {
@@ -75,9 +122,8 @@ class CompiledTimestampPattern internal constructor(
         return fraction.padEnd(length = NANOSECOND_DIGITS, padChar = '0').take(n = NANOSECOND_DIGITS).toIntOrNull() ?: 0
     }
 
-    private fun offsetOf(groups: MatchGroupCollection, defaultMinutes: Int): UtcOffset? {
-        val raw = valueOf(groups = groups, field = TimestampField.OFFSET)
-            ?: return offsetOfMinutes(minutes = defaultMinutes)
+    private fun explicitOffsetOf(groups: MatchGroupCollection): UtcOffset? {
+        val raw = valueOf(groups = groups, field = TimestampField.OFFSET) ?: return null
         return if (raw.equals(other = "Z", ignoreCase = true)) UtcOffset.ZERO else numericOffsetOf(raw = raw)
     }
 
@@ -112,6 +158,7 @@ class CompiledTimestampPattern internal constructor(
 
     private companion object {
         const val SHORT_YEAR_BASE = 2000
+        const val NOON = 12
         const val MILLIS_PER_SECOND = 1000L
         const val NANOSECOND_DIGITS = 9
         const val OFFSET_DIGITS = 4
@@ -121,6 +168,3 @@ class CompiledTimestampPattern internal constructor(
         val MONTH_NAMES = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
     }
 }
-
-private fun offsetOfMinutes(minutes: Int): UtcOffset? =
-    runCatching { UtcOffset(hours = minutes / 60, minutes = minutes % 60) }.getOrNull()

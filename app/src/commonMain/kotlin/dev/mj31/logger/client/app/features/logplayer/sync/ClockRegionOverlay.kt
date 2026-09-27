@@ -1,5 +1,7 @@
 package dev.mj31.logger.client.app.features.logplayer.sync
 
+import dev.mj31.logger.client.app.theme.video.VideoColors
+import dev.mj31.logger.client.app.theme.Spacing
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -76,18 +78,18 @@ private fun ScanningIndicator(onIntent: (LogPlayerIntent) -> Unit, modifier: Mod
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(color = Color.Black.copy(alpha = SCRIM_ALPHA)),
+            .background(color = VideoColors.scrim),
         contentAlignment = Alignment.Center,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(space = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(space = Spacing.small),
         ) {
-            CircularProgressIndicator(modifier = Modifier.size(size = 32.dp), color = AccentSync)
+            CircularProgressIndicator(modifier = Modifier.size(size = PROGRESS_SIZE.dp), color = AccentSync)
             Text(
                 text = stringResource(resource = Res.string.sync_auto_scanning),
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.White,
+                color = VideoColors.onScrim,
                 textAlign = TextAlign.Center,
             )
             TextButton(onClick = { onIntent(LogPlayerIntent.CancelAutoSync) }) {
@@ -113,7 +115,7 @@ private fun ClockRegionPicker(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(color = Color.Black.copy(alpha = SCRIM_ALPHA))
+            .background(color = VideoColors.scrim)
             .semantics { contentDescription = hint }
             .pointerInput(key1 = frameWidth, key2 = frameHeight) {
                 paneWidth = size.width.toFloat()
@@ -158,13 +160,13 @@ private fun ClockRegionPicker(
 @Composable
 private fun RegionHint(hint: String, onIntent: (LogPlayerIntent) -> Unit) {
     Column(
-        modifier = Modifier.padding(all = 16.dp),
+        modifier = Modifier.padding(all = Spacing.large),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             text = hint,
             style = MaterialTheme.typography.bodySmall,
-            color = Color.White,
+            color = VideoColors.onScrim,
             textAlign = TextAlign.Center,
         )
         TextButton(onClick = { onIntent(LogPlayerIntent.CancelClockRegion) }) {
@@ -221,6 +223,6 @@ private fun regionIntentOf(
 @Suppress("NamedArguments")
 private fun sizeOf(width: Float, height: Float): Size = Size(width, height)
 
-private const val SCRIM_ALPHA = 0.55f
+private const val PROGRESS_SIZE = 32
 private const val STROKE_WIDTH = 3f
 private val UNIT = 0f..1f

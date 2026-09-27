@@ -1,5 +1,7 @@
 package dev.mj31.logger.client.data.session
 
+import kotlinx.datetime.LocalDate
+import dev.mj31.logger.client.domain.model.log.part.LogSourcePart
 import com.google.common.truth.Truth.assertThat
 import dev.mj31.logger.client.domain.format.spec.LogFormatSpec
 import dev.mj31.logger.client.domain.model.log.LogFilter
@@ -44,6 +46,37 @@ class ZipSessionPackageStoreTest {
         assertThat(restoredLog.absolutePath).isNotEqualTo(logFile.absolutePath)
         assertThat(restoredLog.readText()).isEqualTo(logFile.readText())
         assertThat(File(reopened.snapshot.video!!.path).readText()).isEqualTo(videoFile.readText())
+    }
+
+    @Test
+    fun `every file a merged source was made from travels with it`() = runTest {
+        val rotated = file(name = "network.1.txt", content = "09:59:59 INFO Earlier part")
+        val merged = snapshot().let { snapshot ->
+            snapshot.copy(
+                logSources = snapshot.logSources.map { ref ->
+                    ref.copy(
+                        extraParts = listOf(
+                            LogSourcePart(
+                                path = rotated.absolutePath,
+                                name = rotated.name,
+                                referenceDate = LocalDate(year = 2026, monthNumber = 8, dayOfMonth = 1),
+                            ),
+                        ),
+                    )
+                },
+            )
+        }
+        val target = root.resolve("merged.mjclog").absolutePath
+
+        store.write(targetPath = target, snapshot = merged).toList()
+        rotated.delete()
+        val reopened = store.read(path = target)
+
+        val part = reopened.snapshot.logSources.single().extraParts.single()
+        assertThat(part.path).isNotEqualTo(rotated.absolutePath)
+        assertThat(File(part.path).readText()).isEqualTo("09:59:59 INFO Earlier part")
+        assertThat(part.name).isEqualTo("network.1.txt")
+        assertThat(part.referenceDate).isEqualTo(LocalDate(year = 2026, monthNumber = 8, dayOfMonth = 1))
     }
 
     /** Self-contained is the whole point: the archive has to outweigh what it was made from. */
@@ -137,7 +170,7 @@ class ZipSessionPackageStoreTest {
                 id = "src-1",
                 name = logFile.name,
                 path = logFile.absolutePath,
-                format = LogFormatSpec(
+                format = LogFormatSpec.Regex(
                     name = "time seconds",
                     linePattern = "^(?<ts>.*)$",
                     timestampPattern = "HH:mm:ss",

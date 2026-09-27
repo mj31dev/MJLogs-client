@@ -1,5 +1,6 @@
 package dev.mj31.logger.client.data.workspace.db
 
+import dev.mj31.logger.client.data.workspace.db.entity.WorkspaceLogSourcePartEntity
 import dev.mj31.logger.client.data.workspace.db.entity.LastWorkspaceEntity
 import dev.mj31.logger.client.data.workspace.db.entity.PreferenceEntity
 import dev.mj31.logger.client.data.workspace.db.entity.RecentPackageEntity
@@ -18,6 +19,7 @@ import androidx.room.RoomDatabase
     entities = [
         LastWorkspaceEntity::class,
         WorkspaceLogSourceEntity::class,
+        WorkspaceLogSourcePartEntity::class,
         RecentPackageEntity::class,
         PreferenceEntity::class,
     ],
@@ -30,9 +32,11 @@ abstract class MjLogsDatabase : RoomDatabase() {
 
     abstract fun preferenceDao(): PreferenceDao
 
+    abstract fun recentPackageDao(): RecentPackageDao
+
     companion object {
 
-        const val VERSION: Int = 3
+        const val VERSION: Int = 6
 
         /** File name inside a session package; the application store is named by the platform layer. */
         const val PACKAGE_ENTRY_NAME: String = "session.db"

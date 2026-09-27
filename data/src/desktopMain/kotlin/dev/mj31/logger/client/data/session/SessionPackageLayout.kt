@@ -13,6 +13,7 @@ import java.security.MessageDigest
  * manifest.properties   layout version
  * session.db            the workspace, in the schema of the application store
  * logs/<n>-<name>       copies of the log files
+ * logs/<n>.<k>-<name>   copies of the further files merged into log source n
  * video/<name>          copy of the screencast
  * ```
  */
@@ -37,6 +38,10 @@ internal object SessionPackageLayout {
     const val PARTIAL_SUFFIX: String = ".part"
 
     fun logEntryName(index: Int, fileName: String): String = "$LOGS_PREFIX$index-${sanitize(name = fileName)}"
+
+    /** The dot keeps a part apart from a source whose own name happens to start with digits and a dash. */
+    fun logPartEntryName(index: Int, part: Int, fileName: String): String =
+        "$LOGS_PREFIX$index.$part-${sanitize(name = fileName)}"
 
     fun videoEntryName(fileName: String): String = "$VIDEO_PREFIX${sanitize(name = fileName)}"
 

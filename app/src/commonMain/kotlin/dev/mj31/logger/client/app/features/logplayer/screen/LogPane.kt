@@ -50,6 +50,7 @@ import dev.mj31.logger.client.app.resources.log_record_count_filtered
 import dev.mj31.logger.client.app.resources.log_reset_filters
 import dev.mj31.logger.client.app.resources.log_title
 import kotlinx.coroutines.launch
+import kotlinx.datetime.TimeZone
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -74,7 +75,7 @@ fun LogPane(
     Column(
         modifier = modifier
             .background(color = MaterialTheme.colorScheme.background)
-            .padding(all = 12.dp),
+            .padding(all = Spacing.medium),
     ) {
         LogPaneHeader(
             state = state,
@@ -86,15 +87,15 @@ fun LogPane(
         )
 
         if (state.sources.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(height = 8.dp))
-            SourceChips(state = state, onFilterChange = onFilterChange)
+            Spacer(modifier = Modifier.height(height = Spacing.small))
+            SourceChips(state = state, onFilterChange = onFilterChange, onIntent = onIntent)
         }
 
-        Spacer(modifier = Modifier.height(height = 8.dp))
+        Spacer(modifier = Modifier.height(height = Spacing.small))
 
         FilterBar(state = state, onIntent = onIntent)
 
-        Spacer(modifier = Modifier.height(height = 8.dp))
+        Spacer(modifier = Modifier.height(height = Spacing.small))
 
         Box(modifier = Modifier.fillMaxSize()) {
             when {
@@ -197,7 +198,7 @@ private fun LogList(
             state = listState,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(end = 12.dp),
+                .padding(end = Spacing.medium),
         ) {
             items(items = entries, key = { it.id }) { entry ->
                 LogRow(
@@ -206,6 +207,8 @@ private fun LogList(
                     isActive = entry.id == state.activeEntryId,
                     isAnchor = entry.id == state.sync.anchorEntryId,
                     onClick = { onEntrySelected(entry.id) },
+                    timeZone = state.sourceTimeZones[entry.sourceId] ?: TimeZone.UTC,
+                    showUtcTime = state.showUtcColumn,
                 )
             }
         }
@@ -229,7 +232,7 @@ private fun EmptyState(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(all = 32.dp),
+            .padding(all = Spacing.section),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -238,27 +241,31 @@ private fun EmptyState(
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onBackground,
         )
-        Spacer(modifier = Modifier.height(height = 6.dp))
+        Spacer(modifier = Modifier.height(height = Spacing.small))
         Text(
             text = description,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
-        Spacer(modifier = Modifier.height(height = 14.dp))
+        Spacer(modifier = Modifier.height(height = Spacing.medium))
         TextButton(onClick = onAction) { Text(text = actionLabel) }
     }
 }
 
 @Composable
-private fun SourceChips(state: LogPlayerState, onFilterChange: (LogFilter) -> Unit) {
+private fun SourceChips(
+    state: LogPlayerState,
+    onFilterChange: (LogFilter) -> Unit,
+    onIntent: (LogPlayerIntent) -> Unit,
+) {
     val allIds = remember(key1 = state.sources) { state.sources.map { it.id }.toSet() }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .horizontalScroll(state = rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(space = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(space = Spacing.small),
     ) {
         state.sources.forEach { source ->
             SourceChip(
@@ -274,6 +281,8 @@ private fun SourceChips(state: LogPlayerState, onFilterChange: (LogFilter) -> Un
                         ),
                     )
                 },
+                onIntent = onIntent,
+                isZoneWorthNaming = state.showUtcColumn,
             )
         }
     }

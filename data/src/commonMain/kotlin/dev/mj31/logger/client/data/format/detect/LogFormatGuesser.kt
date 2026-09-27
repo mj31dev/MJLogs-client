@@ -14,7 +14,7 @@ import dev.mj31.logger.client.data.format.timestamp.TimestampShapeInference
  */
 class LogFormatGuesser {
 
-    fun guess(sampleLines: List<String>): ManualFormatInput? {
+    fun guess(sampleLines: List<String>): ManualFormatInput.Template? {
         val lines = sampleLines.filter { it.isNotBlank() }.take(n = MAX_SAMPLE_LINES)
         if (lines.size < MIN_SAMPLE_LINES) return null
         // Read the longest plausible timestamp first and fall back to shorter ones: a greedy read can
@@ -23,12 +23,12 @@ class LogFormatGuesser {
             .firstNotNullOfOrNull { maxGroups -> attempt(lines = lines, maxGroups = maxGroups) }
     }
 
-    private fun attempt(lines: List<String>, maxGroups: Int): ManualFormatInput? {
+    private fun attempt(lines: List<String>, maxGroups: Int): ManualFormatInput.Template? {
         val segments = lines.mapNotNull { line -> segmentOf(line = line, maxGroups = maxGroups) }
         if (segments.size < MIN_SAMPLE_LINES || segments.size < lines.size * MIN_COVERAGE) return null
 
         val timestampPattern = TimestampShapeInference.infer(regions = segments.map { it.region }) ?: return null
-        return ManualFormatInput(
+        return ManualFormatInput.Template(
             timestampPattern = timestampPattern,
             structureTemplate = prefixTemplate(prefixes = segments.map { it.prefix }) +
                 LogFormatPlaceholders.TIMESTAMP +

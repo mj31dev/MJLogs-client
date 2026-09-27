@@ -1,5 +1,8 @@
 package dev.mj31.logger.client.app.features.logplayer.screen
 
+import dev.mj31.logger.client.app.theme.type.ContentType
+import dev.mj31.logger.client.app.theme.video.VideoColors
+import dev.mj31.logger.client.app.theme.Spacing
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -13,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
@@ -30,7 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.mj31.logger.client.app.features.logplayer.LogPlayerIntent
@@ -79,18 +80,18 @@ fun VideoPane(
     Column(
         modifier = modifier
             .background(color = MaterialTheme.colorScheme.background)
-            .padding(all = 12.dp),
+            .padding(all = Spacing.medium),
     ) {
         VideoHeader(video = video, onOpenVideoClick = onOpenVideoClick)
 
-        Spacer(modifier = Modifier.height(height = 8.dp))
+        Spacer(modifier = Modifier.height(height = Spacing.small))
 
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(weight = 1f)
-                .clip(shape = RoundedCornerShape(size = 10.dp))
-                .background(color = Color.Black),
+                .clip(shape = MaterialTheme.shapes.medium)
+                .background(color = VideoColors.letterbox),
             contentAlignment = Alignment.Center,
         ) {
             VideoSurface(video = video, frame = frame, onOpenVideoClick = onOpenVideoClick)
@@ -103,7 +104,7 @@ fun VideoPane(
             )
         }
 
-        Spacer(modifier = Modifier.height(height = 8.dp))
+        Spacer(modifier = Modifier.height(height = Spacing.small))
 
         TransportControls(
             video = video,
@@ -111,7 +112,7 @@ fun VideoPane(
             onSeek = { position -> onIntent(LogPlayerIntent.Seek(positionMillis = position)) },
         )
 
-        Spacer(modifier = Modifier.height(height = 4.dp))
+        Spacer(modifier = Modifier.height(height = Spacing.tight))
 
         StepControls(video = video, onIntent = onIntent)
     }
@@ -195,24 +196,24 @@ private fun VideoPlaceholder(
     onAction: () -> Unit,
 ) {
     Column(
-        modifier = Modifier.padding(all = 24.dp),
+        modifier = Modifier.padding(all = Spacing.xlarge),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = VideoColors.onScrim,
         )
-        Spacer(modifier = Modifier.height(height = 6.dp))
+        Spacer(modifier = Modifier.height(height = Spacing.small))
         Text(
             text = description,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = VideoColors.onScrimMuted,
             textAlign = TextAlign.Center,
         )
         if (actionLabel != null) {
-            Spacer(modifier = Modifier.height(height = 14.dp))
+            Spacer(modifier = Modifier.height(height = Spacing.medium))
             Button(onClick = onAction) { Text(text = actionLabel) }
         }
     }
@@ -230,7 +231,7 @@ private fun VideoPlaceholder(
 private fun StepControls(video: VideoUiState, onIntent: (LogPlayerIntent) -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(space = 6.dp, alignment = Alignment.CenterHorizontally),
+        horizontalArrangement = Arrangement.spacedBy(space = Spacing.small, alignment = Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         StepButton(label = Res.string.video_step_second_back, video = video) {
@@ -253,12 +254,11 @@ private fun StepButton(label: StringResource, video: VideoUiState, onClick: () -
     OutlinedButton(
         onClick = onClick,
         enabled = video.hasVideo,
-        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+        contentPadding = PaddingValues(horizontal = Spacing.medium, vertical = Spacing.tight),
     ) {
         Text(
             text = stringResource(resource = label),
             style = MaterialTheme.typography.bodySmall,
-            fontFamily = FontFamily.Monospace,
         )
     }
 }
@@ -288,13 +288,12 @@ private fun TransportControls(
             )
         }
 
-        Spacer(modifier = Modifier.width(width = 12.dp))
+        Spacer(modifier = Modifier.width(width = Spacing.medium))
 
         Text(
             text = formatVideoPosition(positionMillis = sliderValue.toLong()),
-            style = MaterialTheme.typography.bodySmall,
+            style = ContentType.figures,
             color = MaterialTheme.colorScheme.onBackground,
-            fontFamily = FontFamily.Monospace,
         )
 
         Slider(
@@ -308,14 +307,13 @@ private fun TransportControls(
             enabled = video.hasVideo && video.durationMillis > 0,
             modifier = Modifier
                 .weight(weight = 1f)
-                .padding(horizontal = 12.dp),
+                .padding(horizontal = Spacing.medium),
         )
 
         Text(
             text = formatVideoPosition(positionMillis = video.durationMillis),
-            style = MaterialTheme.typography.bodySmall,
+            style = ContentType.figures,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontFamily = FontFamily.Monospace,
         )
     }
 }

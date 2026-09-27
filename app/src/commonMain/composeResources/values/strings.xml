@@ -20,6 +20,10 @@
     <!-- Transient notices -->
     <string name="message_dismiss">Dismiss</string>
     <string name="message_import_success">%1$s: %2$s records, format "%3$s"</string>
+    <string name="message_zone_change_failed">%1$s could not be read again in the new time zone; it is shown as before.</string>
+    <string name="duplicate_existing_label">Already open</string>
+    <string name="message_already_open">%1$s is already open.</string>
+    <string name="message_merged">%1$s merged into %2$s: %3$s new records.</string>
     <string name="message_record_outside_video">This record is outside the recorded video</string>
     <string name="message_select_record_first">Select a log record first</string>
     <string name="message_load_screencast_first">Load a screencast first</string>
@@ -73,6 +77,21 @@
     <string name="filter_window_60s">±60s</string>
     <string name="source_chip_subtitle">%1$s records · %2$s</string>
     <string name="source_chip_skipped">, %1$s skipped</string>
+    <string name="source_chip_with_preamble">%1$s · header</string>
+    <string name="source_chip_menu_glyph">⋮</string>
+    <string name="source_chip_menu_description">More for %1$s</string>
+    <string name="source_menu_preamble">File header</string>
+    <string name="source_menu_zone">Time zone…</string>
+    <string name="source_chip_with_zone">%1$s · %2$s</string>
+    <!-- Only for a file merged from several; one file says nothing. -->
+    <plurals name="source_chip_file_count">
+        <item quantity="one">%1$d file</item>
+        <item quantity="other">%1$d files</item>
+    </plurals>
+    <string name="source_chip_with_files">%1$s · %2$s</string>
+    <string name="source_zone_line">%1$s from lines</string>
+    <string name="source_zone_header">%1$s from header</string>
+    <string name="source_zone_assumed">UTC assumed</string>
 
     <!-- Synchronization bar -->
     <string name="sync_state_synchronized">Timelines synchronized</string>
@@ -96,6 +115,7 @@
     <string name="sync_frame_time_picker_hint">Pick the date and the hour; the seconds already typed are kept.</string>
     <string name="sync_frame_time_picker_confirm">OK</string>
     <string name="sync_frame_time_picker_cancel">Cancel</string>
+    <string name="sync_frame_zone">Time zone: %1$s…</string>
     <string name="sync_frame_time_invalid">Enter a time such as 2026-06-29 18:50:07.267 or 18:50:07</string>
 
     <!-- Synchronization the application performs by itself -->
@@ -116,8 +136,25 @@
     <string name="format_dialog_confirm_title">Check how %1$s was read</string>
     <string name="format_dialog_title">Describe the format of %1$s</string>
     <string name="format_suggestion_hint">The fields below are pre-filled with the layout inferred from these lines. Check them and apply, or pick another starting point.</string>
+    <string name="format_shape_label">This file is</string>
+    <string name="format_shape_template">Plain lines</string>
+    <string name="format_shape_json">JSON per line</string>
+    <string name="format_shape_delimited">Columns</string>
     <string name="format_timestamp_label">Timestamp pattern</string>
+    <string name="format_zone_label">Time zone</string>
+    <string name="format_zone_placeholder">From the file, or UTC</string>
+    <string name="format_zone_hint">Leave empty to take it from the file, or UTC. For example Europe/Berlin or UTC+3.</string>
     <string name="format_structure_label">Line structure</string>
+    <string name="format_json_timestamp_label">Timestamp key</string>
+    <string name="format_json_level_label">Level key</string>
+    <string name="format_json_tag_label">Tag key</string>
+    <string name="format_json_message_label">Message key</string>
+    <string name="format_delimiter_label">Separator</string>
+    <string name="format_header_label">First line names the columns</string>
+    <string name="format_delimited_timestamp_label">Timestamp column</string>
+    <string name="format_delimited_level_label">Level column</string>
+    <string name="format_delimited_tag_label">Tag column</string>
+    <string name="format_delimited_message_label">Message column</string>
     <string name="format_apply">Apply</string>
     <string name="format_use_mine">Use my format</string>
     <string name="format_import_as_detected">Import as detected</string>
@@ -127,7 +164,58 @@
     <string name="format_preset_time_only">Time only</string>
     <string name="format_preset_epoch">Epoch millis</string>
     <string name="format_preset_custom_prefix">Custom prefix</string>
-    <string name="format_help">Timestamp tokens: yyyy, yy, MMM, MM, dd, HH, mm, ss, SSS, XXX, epochMillis, epochSeconds. Everything else is matched literally.\nStructure placeholders: {timestamp} (required), {level}, {tag}, {message}, and {any} to skip a varying part such as a counter or a thread id ({any} may be repeated).\nSpaces match any run of whitespace; punctuation such as &lt; &gt; ~ | is matched literally, and {{ }} stand for literal braces.</string>
+    <string name="format_help_timestamp">Timestamp tokens: yyyy, yy, MMM, MM, dd, HH, mm, ss, SSS, XXX, epochMillis, epochSeconds. Everything else is matched literally.</string>
+    <string name="format_help_template">Structure placeholders: {timestamp} (required), {level}, {tag}, {message}, and {any} to skip a varying part such as a counter or a thread id ({any} may be repeated).\nSpaces match any run of whitespace; punctuation such as &lt; &gt; ~ | is matched literally, and {{ }} stand for literal braces.</string>
+    <string name="format_help_json">A key may be a dotted path such as log.level. An empty box means the log carries no such component; only the timestamp key is required.</string>
+    <string name="format_help_delimited">The separator is one character, or \\t for a tab. A column written #2 is the third one; any other text is a header name and reads only when the first line names the columns.</string>
+
+    <!-- A file the extension filter refused; the sentence explaining why comes from the store. -->
+    <string name="unsupported_import_title">Unrecognized file</string>
+    <string name="unsupported_import_question">Read it as a log anyway?</string>
+    <string name="unsupported_import_confirm">Open anyway</string>
+    <string name="unsupported_import_skip">Skip file</string>
+
+    <!-- A dateless log running past midnight, where both candidate days fit; neither is a default. -->
+    <string name="start_day_title">Two days fit this file</string>
+    <string name="start_day_explanation">Its records carry the time of day but no date, and the times run past midnight, so the file covers two days. Neither the file nor the moment it was last written says which two — and read under the wrong day, every record sits a day away from the screencast.</string>
+    <string name="start_day_question">Which day does it start on?</string>
+    <string name="start_day_confirm">Use this day</string>
+    <string name="start_day_skip">Skip file</string>
+
+    <!-- A file that repeats one already open. The file's name and folder are shown above the prose. -->
+    <string name="duplicate_copy_title">Already open</string>
+    <string name="duplicate_copy_explanation">It holds exactly the same records as “%1$s”, which is already open. Opening it too would show every record twice.</string>
+    <string name="duplicate_overlap_title">Overlaps an open file</string>
+    <!-- Keyed on the shared count, which decides the verb; the total is at least two for an overlap. -->
+    <plurals name="duplicate_overlap_explanation">
+        <item quantity="one">%1$d of its %2$d records is already in “%3$s”. Merging adds the rest to that file and keeps the shared record once.</item>
+        <item quantity="other">%1$d of its %2$d records are already in “%3$s”. Merging adds the rest to that file and keeps each shared record once.</item>
+    </plurals>
+    <string name="duplicate_choice_merge">Merge</string>
+    <string name="duplicate_choice_add_separately_copy">Open anyway</string>
+    <string name="duplicate_choice_add_separately_overlap">Open separately</string>
+    <string name="duplicate_choice_skip">Skip file</string>
+
+    <!-- Time zone chooser, for one file or for the clock on the screen -->
+    <string name="zone_dialog_label">Time zone</string>
+    <string name="zone_dialog_screen_clock">Screen clock</string>
+    <string name="zone_current">Now %1$s, %2$s.</string>
+    <string name="zone_origin_line">read from the offsets its lines carry</string>
+    <string name="zone_origin_chosen">as chosen</string>
+    <string name="zone_origin_header">as named in its header</string>
+    <string name="zone_origin_default">assumed because nothing names one</string>
+    <string name="zone_origin_follows_logs">following the logs</string>
+    <string name="zone_automatic_source">Automatic — from the file’s header, or UTC</string>
+    <string name="zone_automatic_screen">Follow the logs</string>
+    <string name="zone_search_label">Find a region or type an offset</string>
+    <string name="zone_search_placeholder">Berlin, UTC+3</string>
+    <string name="zone_no_match">Nothing matches “%1$s”.</string>
+    <string name="zone_current_marker">current</string>
+    <string name="zone_cancel">Cancel</string>
+
+    <!-- File header viewer -->
+    <string name="preamble_caption">Written before the first record, shown exactly as it appears in the file.</string>
+    <string name="preamble_close">Close</string>
 
     <!-- Format preview -->
     <string name="preview_unavailable">No preview while the format is invalid</string>

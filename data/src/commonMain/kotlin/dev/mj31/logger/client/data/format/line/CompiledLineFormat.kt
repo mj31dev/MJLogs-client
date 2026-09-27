@@ -12,7 +12,7 @@ import dev.mj31.logger.client.data.format.timestamp.CompiledTimestampPattern
  * specification and shared between parsers.
  */
 internal class CompiledLineFormat private constructor(
-    val spec: LogFormatSpec,
+    val spec: LogFormatSpec.Regex,
     val lineRegex: Regex,
     val timestamp: CompiledTimestampPattern,
 ) {
@@ -30,7 +30,7 @@ internal class CompiledLineFormat private constructor(
     companion object {
 
         /** @throws IllegalArgumentException when either the line pattern or the timestamp pattern is invalid. */
-        fun compile(spec: LogFormatSpec): CompiledLineFormat {
+        fun compile(spec: LogFormatSpec.Regex): CompiledLineFormat {
             val regex = runCatching { Regex(pattern = spec.linePattern, option = RegexOption.IGNORE_CASE) }
                 .getOrElse { error ->
                     throw IllegalArgumentException("Log format '${spec.name}' has an invalid line pattern: ${error.message}")

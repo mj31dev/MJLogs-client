@@ -46,7 +46,7 @@ class FakeLogFormatDetector(
     fun enqueueUndetermined(
         sampleLines: List<String>,
         reason: String,
-        suggestion: ManualFormatInput? = null,
+        suggestion: ManualFormatInput.Template? = null,
     ) {
         queuedResults += FormatDetectionResult.Undetermined(
             sampleLines = sampleLines,

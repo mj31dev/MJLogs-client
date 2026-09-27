@@ -13,6 +13,8 @@ enum class TimestampField(val groupName: String) {
     MONTH("tsMonth"),
     DAY("tsDay"),
     HOUR("tsHour"),
+    HOUR_12("tsHour12"),
+    MERIDIEM("tsMeridiem"),
     MINUTE("tsMinute"),
     SECOND("tsSecond"),
     FRACTION("tsFraction"),

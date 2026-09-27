@@ -17,7 +17,7 @@ sealed interface FormatDetectionResult {
         val spec: LogFormatSpec,
         val confidence: Float,
         val missingComponents: Set<LogComponent> = emptySet(),
-        val suggestion: ManualFormatInput? = null,
+        val suggestion: ManualFormatInput.Template? = null,
     ) : FormatDetectionResult
 
     /**
@@ -31,6 +31,6 @@ sealed interface FormatDetectionResult {
     data class Undetermined(
         val sampleLines: List<String>,
         val reason: String,
-        val suggestion: ManualFormatInput? = null,
+        val suggestion: ManualFormatInput.Template? = null,
     ) : FormatDetectionResult
 }

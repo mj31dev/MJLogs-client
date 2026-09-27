@@ -27,7 +27,13 @@ class CaptureWorkspaceUseCase(
         packagePath: String?,
     ): WorkspaceSnapshot = WorkspaceSnapshot(
         logSources = sessionRepository.sources.value.map { source ->
-            LogSourceRef(id = source.id, name = source.name, path = source.path, format = source.format)
+            LogSourceRef(
+                id = source.id,
+                name = source.name,
+                path = source.path,
+                format = source.format,
+                referenceDate = source.referenceDate,
+            )
         },
         video = videoRepository.media.value,
         anchor = syncRepository.syncState.value.anchorOrNull,

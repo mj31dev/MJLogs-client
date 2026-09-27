@@ -6,6 +6,7 @@ import dev.mj31.logger.client.domain.format.spec.LogFormatSpec
 import dev.mj31.logger.client.domain.model.log.LogEntry
 import dev.mj31.logger.client.domain.model.log.LogLevel
 import dev.mj31.logger.client.domain.model.log.LogSource
+import kotlinx.datetime.LocalDate
 import kotlinx.coroutines.test.runTest
 import kotlin.time.Instant
 import kotlin.test.Test
@@ -108,6 +109,7 @@ class InMemoryLogSessionRepositoryTest {
         name = "$id.txt",
         path = "/logs/$id.txt",
         format = SPEC,
+        referenceDate = LocalDate(year = 2024, monthNumber = 1, dayOfMonth = 15),
         entries = offsets.mapIndexed { index, offset ->
             LogEntry(
                 id = "$id:${index + 1}",
@@ -124,7 +126,7 @@ class InMemoryLogSessionRepositoryTest {
 
     private companion object {
         val BASE: Instant = Instant.parse("2024-05-01T10:00:00Z")
-        val SPEC = LogFormatSpec(
+        val SPEC = LogFormatSpec.Regex(
             name = "test",
             linePattern = "(?<ts>.*)",
             timestampPattern = "epochMillis",

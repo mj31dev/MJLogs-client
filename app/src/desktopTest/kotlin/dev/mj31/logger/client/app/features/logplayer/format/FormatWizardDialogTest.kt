@@ -21,6 +21,7 @@ import dev.mj31.logger.client.domain.format.compile.FormatErrorField
 import dev.mj31.logger.client.domain.format.spec.LogFormatSpec
 import dev.mj31.logger.client.domain.format.compile.ManualFormatInput
 import dev.mj31.logger.client.domain.model.log.LogSource
+import kotlinx.datetime.LocalDate
 import kotlin.test.Test
 import dev.mj31.logger.client.data.format.preview.RegexLogFormatPreviewer
 import dev.mj31.logger.client.app.features.logplayer.state.format.FormatRequestUiState
@@ -52,8 +53,10 @@ class FormatWizardDialogTest {
 
         assertThat(intents).containsExactly(
             LogPlayerIntent.UpdateFormatDraft(
-                timestampPattern = "HH:mm:ss",
-                structureTemplate = STRUCTURE_TEMPLATE,
+                draft = ManualFormatInput.Template(
+                    timestampPattern = "HH:mm:ss",
+                    structureTemplate = STRUCTURE_TEMPLATE,
+                ),
             ),
         )
     }
@@ -61,7 +64,7 @@ class FormatWizardDialogTest {
     @Test
     fun `a draft that reads nothing cannot be applied`() = runComposeUiTest {
         val request = requestFor(
-            draft = ManualFormatInput(timestampPattern = "HH:mm:ss", structureTemplate = "{timestamp} {message}"),
+            draft = ManualFormatInput.Template(timestampPattern = "HH:mm:ss", structureTemplate = "{timestamp} {message}"),
         )
 
         setContent { FormatWizardDialog(request = request, onIntent = {}) }
@@ -73,7 +76,7 @@ class FormatWizardDialogTest {
     @Test
     fun `a broken timestamp pattern is reported under its own field`() = runComposeUiTest {
         val request = requestFor(
-            draft = ManualFormatInput(timestampPattern = "???", structureTemplate = "{timestamp} {message}"),
+            draft = ManualFormatInput.Template(timestampPattern = "???", structureTemplate = "{timestamp} {message}"),
         )
 
         setContent { FormatWizardDialog(request = request, onIntent = {}) }
@@ -88,7 +91,7 @@ class FormatWizardDialogTest {
     @Test
     fun `a broken structure template is reported under its own field`() = runComposeUiTest {
         val request = requestFor(
-            draft = ManualFormatInput(timestampPattern = "HH:mm:ss", structureTemplate = "{timestamp} {thread}"),
+            draft = ManualFormatInput.Template(timestampPattern = "HH:mm:ss", structureTemplate = "{timestamp} {thread}"),
         )
 
         setContent { FormatWizardDialog(request = request, onIntent = {}) }
@@ -100,7 +103,7 @@ class FormatWizardDialogTest {
 
     @Test
     fun `a failure that belongs to no field falls back to a notice`() = runComposeUiTest {
-        val draft = ManualFormatInput(timestampPattern = TIMESTAMP_PATTERN, structureTemplate = STRUCTURE_TEMPLATE)
+        val draft = ManualFormatInput.Template(timestampPattern = TIMESTAMP_PATTERN, structureTemplate = STRUCTURE_TEMPLATE)
         val request = requestFor(draft = draft).copy(
             error = FormatError(message = "No line matched the provided format", field = FormatErrorField.NONE),
         )
@@ -150,8 +153,10 @@ class FormatWizardDialogTest {
 
         assertThat(intents).containsExactly(
             LogPlayerIntent.UpdateFormatDraft(
-                timestampPattern = "HH:mm:ss",
-                structureTemplate = "{timestamp} {message}",
+                draft = ManualFormatInput.Template(
+                    timestampPattern = "HH:mm:ss",
+                    structureTemplate = "{timestamp} {message}",
+                ),
             ),
         )
     }
@@ -187,10 +192,22 @@ class FormatWizardDialogTest {
     }
 
     @Test
+    fun `the sample stays on screen while the format does not compile`() = runComposeUiTest {
+        val request = requestFor(
+            draft = ManualFormatInput.Template(timestampPattern = "???", structureTemplate = "{timestamp} {message}"),
+        )
+
+        setContent { FormatWizardDialog(request = request, onIntent = {}) }
+
+        // The preview sits above the inputs, so a sample that disappeared would drag them upwards.
+        onNodeWithText(text = SAMPLE_LINES.first()).assertIsDisplayed()
+    }
+
+    @Test
     fun `a confirmation offers to keep the file as it was read`() {
         val intents = mutableListOf<LogPlayerIntent>()
         val request = requestFor(
-            draft = ManualFormatInput(timestampPattern = TIMESTAMP_PATTERN, structureTemplate = STRUCTURE_TEMPLATE),
+            draft = ManualFormatInput.Template(timestampPattern = TIMESTAMP_PATTERN, structureTemplate = STRUCTURE_TEMPLATE),
         ).copy(detectedSource = detectedSource())
 
         runComposeUiTest {
@@ -216,27 +233,30 @@ class FormatWizardDialogTest {
         id = "src-1",
         name = "analytics.txt",
         path = "/logs/analytics.txt",
-        format = LogFormatSpec(
+        format = LogFormatSpec.Regex(
             name = "date time millis - message only",
             linePattern = "(?<ts>.*)",
             timestampPattern = TIMESTAMP_PATTERN,
         ),
         entries = emptyList(),
+        referenceDate = LocalDate(year = 2024, monthNumber = 1, dayOfMonth = 15),
     )
 
     private fun suggestedRequest(): FormatRequestUiState = requestFor(
-        draft = ManualFormatInput(timestampPattern = TIMESTAMP_PATTERN, structureTemplate = STRUCTURE_TEMPLATE),
+        draft = ManualFormatInput.Template(timestampPattern = TIMESTAMP_PATTERN, structureTemplate = STRUCTURE_TEMPLATE),
         suggested = true,
     )
 
-    private fun requestFor(draft: ManualFormatInput, suggested: Boolean = false): FormatRequestUiState =
+    private fun requestFor(draft: ManualFormatInput.Template, suggested: Boolean = false): FormatRequestUiState =
         FormatRequestUiState(
             path = "/logs/analytics.txt",
             fileName = "analytics.txt",
             sampleLines = SAMPLE_LINES,
             reason = "No built-in log format matched any line of the sample.",
-            timestampPattern = draft.timestampPattern,
-            structureTemplate = draft.structureTemplate,
+            draft = ManualFormatInput.Template(
+                timestampPattern = draft.timestampPattern,
+                structureTemplate = draft.structureTemplate,
+            ),
             preview = RegexLogFormatPreviewer().preview(input = draft, sampleLines = SAMPLE_LINES),
             suggestion = draft.takeIf { suggested },
         )
@@ -257,5 +277,6 @@ class FormatWizardDialogTest {
             "<0000>~01.08.2026_10.23.45~ANALYTICS~event dispatched (0)",
             "<0001>~01.08.2026_10.23.46~ANALYTICS~event dispatched (1)",
         )
+
     }
 }

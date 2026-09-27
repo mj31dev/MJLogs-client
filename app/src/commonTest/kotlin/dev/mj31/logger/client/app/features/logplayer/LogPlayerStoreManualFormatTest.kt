@@ -70,7 +70,7 @@ class LogPlayerStoreManualFormatTest {
         )
 
         val request = requireNotNull(robot.state.formatRequest)
-        assertThat(request.timestampPattern).isEqualTo("epochMillis")
+        assertThat(request.draft.timestampPattern).isEqualTo("epochMillis")
         val ready = assertIs<FormatPreview.Ready>(request.preview)
         assertThat(ready.matchedLines).isEqualTo(1)
         assertThat(ready.lines.single().spans.map { it.component })

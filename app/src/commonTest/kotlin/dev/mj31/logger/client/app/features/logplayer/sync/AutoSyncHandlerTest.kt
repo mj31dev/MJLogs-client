@@ -1,5 +1,6 @@
 package dev.mj31.logger.client.app.features.logplayer.sync
 
+import kotlinx.datetime.TimeZone
 import com.google.common.truth.Truth.assertThat
 import dev.mj31.logger.client.app.fake.LogPlayerFixtures
 import dev.mj31.logger.client.app.fake.video.FakeVideoFrameScanner
@@ -250,6 +251,7 @@ class AutoSyncHandlerTest {
             dispatcher = StandardTestDispatcher(scheduler = testScheduler),
             emit = { effect -> effects += effect },
             seekTo = { position -> seeks += position },
+            syncZone = { TimeZone.UTC },
         )
         return World(
             handler = handler,

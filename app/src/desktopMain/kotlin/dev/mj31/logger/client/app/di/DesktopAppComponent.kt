@@ -10,6 +10,7 @@ import dev.mj31.logger.client.app.usecase.legal.ReadLegalNoticesUseCase
 import dev.mj31.logger.client.data.legal.BundledLegalNoticeRepository
 import dev.mj31.logger.client.data.player.DesktopVideoPlayerProvider
 import dev.mj31.logger.client.data.source.LocalTextFileDataSource
+import dev.mj31.logger.client.data.source.archive.LocalLogFileExpander
 import dev.mj31.logger.client.data.source.UuidIdGenerator
 import dev.mj31.logger.client.data.session.ZipSessionPackageStore
 import dev.mj31.logger.client.data.source.video.FFmpegVideoFrameScanner
@@ -26,6 +27,7 @@ import dev.mj31.logger.client.domain.repository.preferences.PreferencesRepositor
 import dev.mj31.logger.client.domain.session.SessionPackageStore
 import dev.mj31.logger.client.domain.source.IdGenerator
 import dev.mj31.logger.client.domain.source.TextFileDataSource
+import dev.mj31.logger.client.domain.source.archive.LogFileExpander
 import dev.mj31.logger.client.domain.source.video.VideoFrameScanner
 import dev.mj31.logger.client.domain.source.video.VideoMetadataSource
 import dev.mj31.logger.client.domain.sync.screen.ScreenClockReader
@@ -52,6 +54,7 @@ import me.tatarka.inject.annotations.Provides
 abstract class DesktopAppComponent :
     DataBindings,
     UseCaseBindings,
+    SourceBindings,
     PresentationBindings {
 
     abstract val store: LogPlayerStore
@@ -87,6 +90,10 @@ abstract class DesktopAppComponent :
     @Provides
     fun textFileDataSource(dispatcher: IoDispatcher): TextFileDataSource =
         LocalTextFileDataSource(dispatcher = dispatcher)
+
+    @Provides
+    fun logFileExpander(dispatcher: IoDispatcher): LogFileExpander =
+        LocalLogFileExpander(cacheDirectory = AppDirectories.cache(), dispatcher = dispatcher)
 
     @Provides
     fun idGenerator(): IdGenerator = UuidIdGenerator()

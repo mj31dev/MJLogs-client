@@ -7,6 +7,9 @@ coroutines = "1.11.0"
 # 0.7 moved `Instant` and `Clock` into the standard library as `kotlin.time`; the old names remain
 # only as deprecated typealiases, so compile and runtime classpaths have to agree on this version.
 kotlinx-datetime = "0.8.0"
+# Only the runtime is used, for `Json.parseToJsonElement`; reading a log record needs a tree, not a
+# generated serializer, so the compiler plugin is deliberately not applied.
+kotlinx-serialization = "1.9.0"
 truth = "1.4.5"
 javacv = "1.5.13"
 javacpp = "1.5.13"
@@ -24,6 +27,7 @@ kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-c
 kotlinx-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 truth = { module = "com.google.truth:truth", version.ref = "truth" }
 detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt-formatting" }

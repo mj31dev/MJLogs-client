@@ -1,5 +1,12 @@
 package dev.mj31.logger.client.app.fake
 
+import dev.mj31.logger.client.app.usecase.ingest.source.RebuildSourceUseCase
+import dev.mj31.logger.client.app.usecase.ingest.duplicate.DetectDuplicateUseCase
+import dev.mj31.logger.client.app.usecase.ingest.duplicate.MergeSourcePartsUseCase
+import dev.mj31.logger.client.app.usecase.ingest.zone.ChangeSourceZoneUseCase
+import dev.mj31.logger.client.app.usecase.sync.ResolveSyncZoneUseCase
+import dev.mj31.logger.client.app.usecase.ingest.date.ResolveStartDayUseCase
+import dev.mj31.logger.client.domain.format.compile.ManualFormatInput
 import dev.mj31.logger.client.app.features.logplayer.LogPlayerEffect
 import dev.mj31.logger.client.app.view.text.UiText
 import dev.mj31.logger.client.app.features.logplayer.LogPlayerIntent
@@ -34,6 +41,8 @@ import dev.mj31.logger.client.app.usecase.ingest.ImportLogFileUseCase
 import dev.mj31.logger.client.app.usecase.session.MergeLogSourcesUseCase
 import dev.mj31.logger.client.domain.model.log.LogFilter
 import dev.mj31.logger.client.app.fake.format.ScriptedLogLineParserFactory
+import dev.mj31.logger.client.app.usecase.ingest.date.ResolveReferenceDateUseCase
+import dev.mj31.logger.client.app.fake.source.FakeLogFileExpander
 import dev.mj31.logger.client.app.fake.format.FakeLogFormatDetector
 import dev.mj31.logger.client.data.format.preview.RegexLogFormatPreviewer
 import dev.mj31.logger.client.app.features.logplayer.state.LogPlayerStateAssembler
@@ -113,8 +122,10 @@ class LogPlayerRobot private constructor(
         structureTemplate: String = DEFAULT_STRUCTURE_TEMPLATE,
     ) = dispatch(
         intent = LogPlayerIntent.UpdateFormatDraft(
-            timestampPattern = timestampPattern,
-            structureTemplate = structureTemplate,
+            draft = ManualFormatInput.Template(
+                timestampPattern = timestampPattern,
+                structureTemplate = structureTemplate,
+            ),
         ),
     )
 
@@ -198,8 +209,6 @@ class LogPlayerRobot private constructor(
                 dataSource = files,
                 assembler = LogSourceAssembler(parserFactory = ScriptedLogLineParserFactory()),
                 idGenerator = FixedIdGenerator(),
-                clock = FixedClock(instant = LogPlayerFixtures.BASE),
-                timeZone = TimeZone.UTC,
             )
             val detector = FakeLogFormatDetector()
             val compiler = FakeLogFormatCompiler(
@@ -262,27 +271,12 @@ class LogPlayerRobot private constructor(
             val parseFrameTime = ParseFrameTimeUseCase()
             return LogPlayerStore(
             repositories = repositories,
-            useCases = LogPlayerUseCases(
-                mergeLogSources = MergeLogSourcesUseCase(),
-                importLogFile = ImportLogFileUseCase(
-                    loader = loader,
-                    detector = detector,
-                    dispatcher = dispatcher,
-                ),
-                importLogFileWithFormat = ImportLogFileWithFormatUseCase(
-                    loader = loader,
-                    dispatcher = dispatcher,
-                ),
-                filterLogEntries = FilterLogEntriesUseCase(),
-                synchronizeTimelines = SynchronizeTimelinesUseCase(syncRepository = repositories.sync),
-                synchronizeAtTimestamp = SynchronizeAtTimestampUseCase(syncRepository = repositories.sync),
+            useCases = useCasesFor(
+                loader = loader,
+                detector = detector,
+                repositories = repositories,
+                dispatcher = dispatcher,
                 parseFrameTime = parseFrameTime,
-                composeFrameTime = ComposeFrameTimeUseCase(parseFrameTime = parseFrameTime),
-                autoSynchronize = fakeAutoSynchronize(syncRepository = repositories.sync),
-                stepVideoPosition = StepVideoPositionUseCase(),
-                clearSynchronization = ClearSynchronizationUseCase(syncRepository = repositories.sync),
-                mapVideoPositionToLogTime = MapVideoPositionToLogTimeUseCase(),
-                mapLogTimeToVideoPosition = MapLogTimeToVideoPositionUseCase(),
             ),
             player = player,
             formatTools = LogPlayerFormatTools(compiler = compiler, previewer = RegexLogFormatPreviewer()),
@@ -291,6 +285,7 @@ class LogPlayerRobot private constructor(
                 findEntryAtVideoPosition = FindEntryAtVideoPositionUseCase(),
                 mapVideoPositionToLogTime = MapVideoPositionToLogTimeUseCase(),
                 resolveTimelineOverlap = ResolveTimelineOverlapUseCase(),
+                resolveSyncZone = ResolveSyncZoneUseCase(),
             ),
             scope = scope,
             defaultDispatcher = dispatcher,
@@ -303,6 +298,60 @@ class LogPlayerRobot private constructor(
                 packageStore = packageStore,
             ),
         )
+        }
+
+
+        /** Every use case real, only the boundaries a unit test cannot own replaced. */
+        private fun useCasesFor(
+            loader: LogSourceLoader,
+            detector: FakeLogFormatDetector,
+            repositories: LogPlayerRepositories,
+            dispatcher: CoroutineDispatcher,
+            parseFrameTime: ParseFrameTimeUseCase,
+        ): LogPlayerUseCases {
+            val expander = FakeLogFileExpander()
+            val resolveReferenceDate = ResolveReferenceDateUseCase(timeZone = TimeZone.UTC)
+            val mergeParts = MergeSourcePartsUseCase()
+            return LogPlayerUseCases(
+                mergeLogSources = MergeLogSourcesUseCase(),
+                importLogFile = ImportLogFileUseCase(
+                    loader = loader,
+                    detector = detector,
+                    expander = expander,
+                    resolveReferenceDate = resolveReferenceDate,
+                    resolveStartDay = ResolveStartDayUseCase(timeZone = TimeZone.UTC),
+                    dispatcher = dispatcher,
+                ),
+                importLogFileWithFormat = ImportLogFileWithFormatUseCase(
+                    loader = loader,
+                    expander = expander,
+                    resolveReferenceDate = resolveReferenceDate,
+                    dispatcher = dispatcher,
+                ),
+                filterLogEntries = FilterLogEntriesUseCase(),
+                synchronizeTimelines = SynchronizeTimelinesUseCase(syncRepository = repositories.sync),
+                synchronizeAtTimestamp = SynchronizeAtTimestampUseCase(syncRepository = repositories.sync),
+                parseFrameTime = parseFrameTime,
+                composeFrameTime = ComposeFrameTimeUseCase(parseFrameTime = parseFrameTime),
+                autoSynchronize = fakeAutoSynchronize(syncRepository = repositories.sync),
+                stepVideoPosition = StepVideoPositionUseCase(),
+                clearSynchronization = ClearSynchronizationUseCase(syncRepository = repositories.sync),
+                mapVideoPositionToLogTime = MapVideoPositionToLogTimeUseCase(),
+                mapLogTimeToVideoPosition = MapLogTimeToVideoPositionUseCase(),
+                changeSourceZone = ChangeSourceZoneUseCase(
+                    rebuildSource = RebuildSourceUseCase(
+                        loader = loader,
+                        expander = expander,
+                        resolveReferenceDate = resolveReferenceDate,
+                        mergeParts = mergeParts,
+                    ),
+                    sessionRepository = repositories.session,
+                    dispatcher = dispatcher,
+                ),
+                resolveSyncZone = ResolveSyncZoneUseCase(),
+                detectDuplicate = DetectDuplicateUseCase(),
+                mergeSourceParts = mergeParts,
+            )
         }
 
     }

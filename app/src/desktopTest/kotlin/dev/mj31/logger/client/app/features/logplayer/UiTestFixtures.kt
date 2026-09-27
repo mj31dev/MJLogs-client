@@ -49,7 +49,7 @@ internal fun loadedState(): LogPlayerState = LogPlayerState(
 
 /** Pending manual-format request, pre-filled with the layout inferred from [formatSampleLines]. */
 internal fun pendingFormatRequest(): FormatRequestUiState {
-    val draft = ManualFormatInput(
+    val draft = ManualFormatInput.Template(
         timestampPattern = "dd.MM.yyyy_HH.mm.ss",
         structureTemplate = "<{any}>~{timestamp}~{tag}~{message}",
     )
@@ -58,8 +58,7 @@ internal fun pendingFormatRequest(): FormatRequestUiState {
         fileName = "analytics.txt",
         sampleLines = formatSampleLines,
         reason = "No built-in log format matched any line of the sample.",
-        timestampPattern = draft.timestampPattern,
-        structureTemplate = draft.structureTemplate,
+        draft = draft,
         preview = RegexLogFormatPreviewer().preview(input = draft, sampleLines = formatSampleLines),
         suggestion = draft,
     )

@@ -11,11 +11,11 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import dev.mj31.logger.client.domain.model.log.LogLevel
 import dev.mj31.logger.client.data.format.timestamp.TimestampPatternCompiler
-import dev.mj31.logger.client.data.format.parse.RegexLogLineParserFactory
+import dev.mj31.logger.client.data.format.parse.DispatchingLogLineParserFactory
 
 class RegexLogLineParserTest {
 
-    private val factory = RegexLogLineParserFactory()
+    private val factory = DispatchingLogLineParserFactory()
 
     @Test
     fun `parses a complete record`() {
@@ -109,22 +109,48 @@ class RegexLogLineParserTest {
     }
 
     @Test
-    fun `applies the offset declared by the specification`() {
-        val parser = parser(template = MESSAGE_ONLY_TEMPLATE, timestampPattern = MILLIS_PATTERN, utcOffsetMinutes = 180)
+    fun `applies the zone declared by the specification`() {
+        val parser = parser(template = MESSAGE_ONLY_TEMPLATE, timestampPattern = MILLIS_PATTERN, zoneId = "UTC+03:00")
 
         val record = assertIs<ParsedLine.Record>(parser.parse(line = "2024-01-15 10:23:45.123 Started"))
 
         assertThat(record.timestamp).isEqualTo(Instant.parse("2024-01-15T07:23:45.123Z"))
+        assertThat(record.utcOffsetSeconds).isNull()
+    }
+
+    @Test
+    fun `a named zone follows daylight saving time across a file`() {
+        val parser = parser(template = MESSAGE_ONLY_TEMPLATE, timestampPattern = MILLIS_PATTERN, zoneId = "Europe/Berlin")
+
+        val winter = assertIs<ParsedLine.Record>(parser.parse(line = "2024-01-15 10:00:00.000 Winter"))
+        val summer = assertIs<ParsedLine.Record>(parser.parse(line = "2024-07-15 10:00:00.000 Summer"))
+
+        assertThat(winter.timestamp).isEqualTo(Instant.parse("2024-01-15T09:00:00Z"))
+        assertThat(summer.timestamp).isEqualTo(Instant.parse("2024-07-15T08:00:00Z"))
+    }
+
+    @Test
+    fun `an offset written in the line outranks the zone and is reported`() {
+        val parser = parser(
+            template = MESSAGE_ONLY_TEMPLATE,
+            timestampPattern = "yyyy-MM-ddTHH:mm:ss.SSSXXX",
+            zoneId = "Europe/Berlin",
+        )
+
+        val record = assertIs<ParsedLine.Record>(parser.parse(line = "2024-01-15T10:23:45.123-05:00 Started"))
+
+        assertThat(record.timestamp).isEqualTo(Instant.parse("2024-01-15T15:23:45.123Z"))
+        assertThat(record.utcOffsetSeconds).isEqualTo(-5 * 3600)
     }
 
     @Test
     fun `rejects a specification that cannot be compiled`() {
-        val invalidLinePattern = LogFormatSpec(
+        val invalidLinePattern = LogFormatSpec.Regex(
             name = "broken",
             linePattern = "^([unbalanced",
             timestampPattern = MILLIS_PATTERN,
         )
-        val invalidTimestampPattern = LogFormatSpec(
+        val invalidTimestampPattern = LogFormatSpec.Regex(
             name = "broken",
             linePattern = "^(?<ts>.*)\$",
             timestampPattern = "???",
@@ -145,15 +171,15 @@ class RegexLogLineParserTest {
         template: String,
         timestampPattern: String,
         fallbackLevel: LogLevel = LogLevel.INFO,
-        utcOffsetMinutes: Int = 0,
+        zoneId: String? = null,
     ): LogLineParser {
         val timestamp = TimestampPatternCompiler.compile(pattern = timestampPattern)
-        val spec = LogFormatSpec(
+        val spec = LogFormatSpec.Regex(
             name = "test format",
             linePattern = LineFormatCompiler.buildLinePattern(template = template, timestampRegex = timestamp.regexSource),
             timestampPattern = timestampPattern,
             fallbackLevel = fallbackLevel,
-            utcOffsetMinutes = utcOffsetMinutes,
+            zoneId = zoneId,
         )
         return factory.create(spec = spec, referenceDate = REFERENCE_DATE)
     }

@@ -1,6 +1,6 @@
 package dev.mj31.logger.client.app.features.logplayer.sync
 
-import androidx.compose.material3.DropdownMenu
+import dev.mj31.logger.client.app.view.menu.AppDropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -43,7 +43,7 @@ fun AutoSyncMenu(
         Text(text = stringResource(resource = Res.string.sync_auto_menu))
     }
 
-    DropdownMenu(expanded = isOpen, onDismissRequest = { isOpen = false }) {
+    AppDropdownMenu(expanded = isOpen, onDismissRequest = { isOpen = false }) {
         DropdownMenuItem(
             text = { Text(text = stringResource(resource = Res.string.sync_auto_run)) },
             onClick = {

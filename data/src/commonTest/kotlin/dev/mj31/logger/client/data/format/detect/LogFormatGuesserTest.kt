@@ -9,13 +9,13 @@ import kotlin.test.Test
 import kotlin.test.assertIs
 import dev.mj31.logger.client.domain.model.log.LogLevel
 import dev.mj31.logger.client.data.format.line.TemplateLogFormatCompiler
-import dev.mj31.logger.client.data.format.parse.RegexLogLineParserFactory
+import dev.mj31.logger.client.data.format.parse.DispatchingLogLineParserFactory
 
 class LogFormatGuesserTest {
 
     private val guesser = LogFormatGuesser()
     private val compiler = TemplateLogFormatCompiler()
-    private val factory = RegexLogLineParserFactory()
+    private val factory = DispatchingLogLineParserFactory()
 
     @Test
     fun `infers a layout no built-in candidate covers`() {
@@ -102,7 +102,7 @@ class LogFormatGuesserTest {
         assertThat(guesser.guess(sampleLines = listOf("10:23:45 boot"))).isNull()
     }
 
-    private fun parse(guess: ManualFormatInput, line: String): ParsedLine.Record {
+    private fun parse(guess: ManualFormatInput.Template, line: String): ParsedLine.Record {
         val spec = assertIs<FormatCompilationResult.Success>(compiler.compile(input = guess)).spec
         val parser = factory.create(spec = spec, referenceDate = REFERENCE_DATE)
         return assertIs<ParsedLine.Record>(parser.parse(line = line))

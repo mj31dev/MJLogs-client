@@ -10,18 +10,15 @@ import kotlinx.coroutines.CancellationException
  * The check lives next to the import rather than in the file dialog: a path can also arrive from the
  * command line, and some platforms ignore the filter of their native dialog.
  */
-internal fun rejectionOf(path: String): LogImportResult.Failure? =
-    if (SupportedFileTypes.accepts(kind = MediaKind.LOG, path = path)) {
-        null
-    } else {
-        LogImportResult.Failure(
-            path = path,
-            message = SupportedFileTypes.rejectionMessage(
-                kind = MediaKind.LOG,
-                fileName = path.substringAfterLast(delimiter = '/').substringAfterLast(delimiter = '\\'),
-            ),
-        )
-    }
+internal fun rejectionOf(path: String): LogImportResult.UnsupportedType? {
+    if (SupportedFileTypes.accepts(kind = MediaKind.LOG, path = path)) return null
+    val fileName = path.substringAfterLast(delimiter = '/').substringAfterLast(delimiter = '\\')
+    return LogImportResult.UnsupportedType(
+        path = path,
+        fileName = fileName,
+        message = SupportedFileTypes.rejectionMessage(kind = MediaKind.LOG, fileName = fileName),
+    )
+}
 
 /**
  * Keeps structured concurrency intact: [runCatching] also swallows cancellation, which would turn a

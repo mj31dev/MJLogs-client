@@ -1,5 +1,6 @@
 package dev.mj31.logger.client.app.features.logplayer.format
 
+import dev.mj31.logger.client.app.features.logplayer.state.format.FormatKind
 import dev.mj31.logger.client.app.features.logplayer.dependencies.LogPlayerFormatTools
 import dev.mj31.logger.client.app.features.logplayer.state.LogPlayerLocalState
 import dev.mj31.logger.client.app.features.logplayer.state.format.FormatDefaults
@@ -33,12 +34,18 @@ internal class FormatRequestHandler(
         val request = head ?: return
         replaceHead(
             request = request.copy(
-                timestampPattern = draft.timestampPattern,
-                structureTemplate = draft.structureTemplate,
+                draft = draft,
                 preview = preview(draft = draft, sampleLines = request.sampleLines),
                 error = null,
             ),
         )
+    }
+
+    /** Switching shape keeps the timestamp pattern, which is the one thing the shapes share. */
+    fun selectKind(kind: FormatKind) {
+        val request = head ?: return
+        if (request.kind == kind) return
+        updateDraft(draft = kind.emptyDraft(timestampPattern = request.draft.timestampPattern))
     }
 
     fun dropHead() {
@@ -58,8 +65,7 @@ internal class FormatRequestHandler(
                 fileName = result.fileName,
                 sampleLines = result.sampleLines,
                 reason = result.reason,
-                timestampPattern = draft.timestampPattern,
-                structureTemplate = draft.structureTemplate,
+                draft = draft,
                 preview = preview(draft = draft, sampleLines = result.sampleLines),
                 suggestion = result.suggestion,
             ),
@@ -68,7 +74,7 @@ internal class FormatRequestHandler(
 
     /** Same dialog as an unrecognized file, but with the parsed source ready behind the accept button. */
     fun enqueue(result: LogImportResult.NeedsConfirmation) {
-        val draft = result.suggestion ?: ManualFormatInput(
+        val draft = result.suggestion ?: ManualFormatInput.Template(
             timestampPattern = result.source.format.timestampPattern,
             structureTemplate = FormatDefaults.STRUCTURE_TEMPLATE,
         )
@@ -78,8 +84,7 @@ internal class FormatRequestHandler(
                 fileName = result.source.name,
                 sampleLines = result.sampleLines,
                 reason = result.reason,
-                timestampPattern = draft.timestampPattern,
-                structureTemplate = draft.structureTemplate,
+                draft = draft,
                 preview = preview(draft = draft, sampleLines = result.sampleLines),
                 suggestion = result.suggestion,
                 detectedSource = result.source,
@@ -100,7 +105,7 @@ internal class FormatRequestHandler(
     private fun preview(draft: ManualFormatInput, sampleLines: List<String>): FormatPreview =
         formatTools.previewer.preview(input = draft, sampleLines = sampleLines)
 
-    private fun defaultDraft(): ManualFormatInput = ManualFormatInput(
+    private fun defaultDraft(): ManualFormatInput.Template = ManualFormatInput.Template(
         timestampPattern = FormatDefaults.TIMESTAMP_PATTERN,
         structureTemplate = FormatDefaults.STRUCTURE_TEMPLATE,
     )
